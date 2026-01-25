@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchPlayerStats } from "./apexApi.js";
+import { fetchPlayerStats, formatKills } from "./apexApi.js";
 
 describe("apexApi", () => {
   const originalEnv = process.env;
@@ -27,6 +27,10 @@ describe("apexApi", () => {
             rankDiv: 2,
           },
         },
+        total: {
+          kills: { value: 5000 },
+          deaths: { value: 2500 },
+        },
       };
 
       vi.mocked(fetch).mockResolvedValue({
@@ -52,6 +56,7 @@ describe("apexApi", () => {
         currentRP: 10862,
         rankName: "Platinum",
         rankDiv: 2,
+        kills: 5000,
       });
     });
 
@@ -136,6 +141,42 @@ describe("apexApi", () => {
       expect(fetch).toHaveBeenCalledWith(
         expect.stringContaining("platform=PS4")
       );
+    });
+
+    it("should handle missing kills data", async () => {
+      const mockResponse = {
+        global: {
+          name: "TestPlayer",
+          platform: "PC",
+          level: 100,
+          rank: {
+            rankScore: 5000,
+            rankName: "Gold",
+            rankDiv: 4,
+          },
+        },
+      };
+
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      } as Response);
+
+      const result = await fetchPlayerStats("TestPlayer");
+
+      expect(result.kills).toBe(0);
+    });
+  });
+
+  describe("formatKills", () => {
+    it("should format kills correctly", () => {
+      const result = formatKills(5000);
+      expect(result).toBe("累計キル: 5,000");
+    });
+
+    it("should handle zero kills", () => {
+      const result = formatKills(0);
+      expect(result).toBe("累計キル: 0");
     });
   });
 });

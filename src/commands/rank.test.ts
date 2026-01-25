@@ -3,9 +3,13 @@ import { execute, data } from "./rank.js";
 import * as apexApi from "../services/apexApi.js";
 
 // Mock apexApi
-vi.mock("../services/apexApi.js", () => ({
-  fetchPlayerStats: vi.fn(),
-}));
+vi.mock("../services/apexApi.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../services/apexApi.js")>();
+  return {
+    ...actual,
+    fetchPlayerStats: vi.fn(),
+  };
+});
 
 describe("rank command", () => {
   const mockInteraction = {
@@ -55,6 +59,7 @@ describe("rank command", () => {
         currentRP: 10862,
         rankName: "Platinum",
         rankDiv: 2,
+        kills: 5000,
       });
 
       await execute(mockInteraction as any);
@@ -81,6 +86,7 @@ describe("rank command", () => {
         currentRP: 5000,
         rankName: "Gold",
         rankDiv: 4,
+        kills: 1000,
       });
 
       await execute(mockInteraction as any);

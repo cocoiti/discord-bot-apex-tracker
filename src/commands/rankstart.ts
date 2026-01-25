@@ -3,14 +3,12 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { fetchPlayerStats, formatKills } from "../services/apexApi.js";
-import {
-  calculateRankProgress,
-  formatRankProgress,
-} from "../utils/rankCalculator.js";
+import { startSession, hasActiveSession } from "../services/kdTracker.js";
+import { calculateRankProgress, formatRankProgress } from "../utils/rankCalculator.js";
 
 export const data = new SlashCommandBuilder()
-  .setName("rank")
-  .setDescription("Apex Legendsのランク情報を表示します")
+  .setName("rankstart")
+  .setDescription("キル追跡セッションを開始します")
   .addStringOption((option) =>
     option
       .setName("player")
@@ -37,16 +35,33 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply();
 
   try {
-    const stats = await fetchPlayerStats(playerName, platform);
-    const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
-    let message = formatRankProgress(stats.name, progress);
-
-    // Add kills information
-    if (stats.kills > 0) {
-      message += `\n\n📊 ${formatKills(stats.kills)}`;
+    if (hasActiveSession(playerName, platform)) {
+      await interaction.editReply(
+        `⚠️ **${playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
+      );
+      return;
     }
 
-    await interaction.editReply(message);
+    const stats = await fetchPlayerStats(playerName, platform);
+    startSession(playerName, platform, stats.kills, stats.currentRP);
+
+    const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
+    const startTime = new Date().toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const lines: string[] = [];
+    lines.push(`✅ **${stats.name}** のセッションを開始しました`);
+    lines.push(`開始時刻: ${startTime}`);
+    lines.push("");
+    lines.push(formatRankProgress(stats.name, progress).split("\n").slice(1).join("\n"));
+    if (stats.kills > 0) {
+      lines.push("");
+      lines.push(`📊 ${formatKills(stats.kills)}`);
+    }
+
+    await interaction.editReply(lines.join("\n"));
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "不明なエラーが発生しました";

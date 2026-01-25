@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { fetchPlayerStats } from "../services/apexApi.js";
+import { fetchPlayerStats, formatKills } from "../services/apexApi.js";
 import {
   calculateRankProgress,
   formatRankProgress,
@@ -23,6 +23,12 @@ async function main() {
     const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
     console.log("");
     console.log(formatRankProgress(stats.name, progress).replace(/\*\*/g, ""));
+
+    // Show kills info
+    if (stats.kills > 0) {
+      console.log("");
+      console.log(formatKills(stats.kills));
+    }
   } catch (error) {
     if (error instanceof Error) {
       console.error(`Error: ${error.message}`);

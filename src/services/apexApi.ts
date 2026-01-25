@@ -5,6 +5,7 @@ export interface ApexPlayerStats {
   currentRP: number;
   rankName: string;
   rankDiv: number;
+  kills: number;
 }
 
 export async function fetchPlayerStats(
@@ -36,6 +37,9 @@ export async function fetchPlayerStats(
     throw new Error(data.Error);
   }
 
+  // Extract kills from total stats
+  const kills = data.total?.kills?.value ?? 0;
+
   return {
     name: data.global.name,
     platform: data.global.platform,
@@ -43,5 +47,10 @@ export async function fetchPlayerStats(
     currentRP: data.global.rank.rankScore,
     rankName: data.global.rank.rankName,
     rankDiv: data.global.rank.rankDiv,
+    kills,
   };
+}
+
+export function formatKills(kills: number): string {
+  return `累計キル: ${kills.toLocaleString()}`;
 }
