@@ -1,12 +1,24 @@
 import "dotenv/config";
-import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
+import { Client, GatewayIntentBits, REST, Routes, ActivityType } from "discord.js";
 import * as rankCommand from "./commands/rank.js";
+import { fetchMapRotation, formatMapStatus } from "./services/mapRotation.js";
 
 const commands = [rankCommand];
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
+
+async function updateBotStatus() {
+  try {
+    const rotation = await fetchMapRotation();
+    const status = formatMapStatus(rotation);
+    client.user?.setActivity(status, { type: ActivityType.Playing });
+    console.log(`Status updated: ${status}`);
+  } catch (error) {
+    console.error("Failed to update status:", error);
+  }
+}
 
 client.once("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}`);
@@ -24,6 +36,10 @@ client.once("ready", async () => {
   } catch (error) {
     console.error("Failed to register commands:", error);
   }
+
+  // Update status immediately and every 30 minutes
+  await updateBotStatus();
+  setInterval(updateBotStatus, 30 * 60 * 1000);
 });
 
 client.on("interactionCreate", async (interaction) => {
