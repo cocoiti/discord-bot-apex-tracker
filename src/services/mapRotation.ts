@@ -31,12 +31,12 @@ export async function fetchMapRotation(): Promise<MapRotation> {
 
   return {
     current: {
-      name: data.battle_royale.current.map,
-      remainingTime: data.battle_royale.current.remainingTimer,
-      remainingMins: data.battle_royale.current.remainingMins,
+      name: data.ranked.current.map,
+      remainingTime: data.ranked.current.remainingTimer,
+      remainingMins: data.ranked.current.remainingMins,
     },
     next: {
-      name: data.battle_royale.next.map,
+      name: data.ranked.next.map,
       remainingTime: "",
       remainingMins: 0,
     },

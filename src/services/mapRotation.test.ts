@@ -17,7 +17,7 @@ describe("mapRotation", () => {
   describe("fetchMapRotation", () => {
     it("should fetch map rotation successfully", async () => {
       const mockResponse = {
-        battle_royale: {
+        ranked: {
           current: {
             map: "World's Edge",
             remainingTimer: "01:23:45",
