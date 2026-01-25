@@ -4,6 +4,7 @@ import {
 } from "discord.js";
 import { fetchPlayerStats, formatKills } from "../services/apexApi.js";
 import { RateLimitError } from "../services/apiRateLimiter.js";
+import { ValidationError } from "../utils/validation.js";
 import {
   calculateRankProgress,
   formatRankProgress,
@@ -50,6 +51,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply(message);
   } catch (error) {
     if (error instanceof RateLimitError) {
+      await interaction.editReply(`⚠️ ${error.message}`);
+      return;
+    }
+    if (error instanceof ValidationError) {
       await interaction.editReply(`⚠️ ${error.message}`);
       return;
     }

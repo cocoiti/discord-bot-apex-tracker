@@ -15,6 +15,11 @@ const client = new Client({
 let cachedRotation: MapRotation | null = null;
 let lastFetchTime: Date | null = null;
 
+// リトライ設定
+const MAX_RETRY_COUNT = 5;
+const RETRY_INTERVAL_MS = 5 * 60 * 1000; // 5分
+let retryCount = 0;
+
 function formatRemainingTime(mins: number): string {
   if (mins <= 0) return "まもなく";
   const hours = Math.floor(mins / 60);
@@ -50,6 +55,7 @@ async function fetchAndUpdateRotation() {
   try {
     cachedRotation = await fetchMapRotation();
     lastFetchTime = new Date();
+    retryCount = 0; // 成功したらリトライカウントをリセット
 
     const status = `${cachedRotation.current.name} (残り${formatRemainingTime(cachedRotation.current.remainingMins)})`;
     client.user?.setActivity(status, { type: ActivityType.Playing });
@@ -58,9 +64,17 @@ async function fetchAndUpdateRotation() {
     // Schedule next display update in 1 minute
     setTimeout(updateStatusDisplay, 60 * 1000);
   } catch (error) {
-    console.error("Failed to fetch map rotation:", error);
-    // Retry after 5 minutes on error
-    setTimeout(fetchAndUpdateRotation, 5 * 60 * 1000);
+    retryCount++;
+    console.error(`Failed to fetch map rotation (attempt ${retryCount}/${MAX_RETRY_COUNT}):`, error);
+
+    if (retryCount < MAX_RETRY_COUNT) {
+      // リトライ上限に達していない場合は再試行
+      setTimeout(fetchAndUpdateRotation, RETRY_INTERVAL_MS);
+    } else {
+      // リトライ上限に達した場合はステータスを更新して停止
+      console.error("Max retry count reached. Map rotation updates disabled.");
+      client.user?.setActivity("マップ情報取得エラー", { type: ActivityType.Playing });
+    }
   }
 }
 

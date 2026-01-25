@@ -1,4 +1,5 @@
 import { rateLimitedFetch } from "./apiRateLimiter.js";
+import { ApiError } from "./apexApi.js";
 
 export interface MapInfo {
   name: string;
@@ -14,31 +15,56 @@ export interface MapRotation {
 export async function fetchMapRotation(): Promise<MapRotation> {
   const apiKey = process.env.APEX_API_KEY;
   if (!apiKey) {
-    throw new Error("APEX_API_KEY is not set");
+    throw new ApiError("APEX_API_KEY is not set");
   }
 
   const response = await rateLimitedFetch(
     `https://api.mozambiquehe.re/maprotation?auth=${apiKey}&version=2`
   );
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} - ${JSON.stringify(data)}`);
+  // JSONパースエラーハンドリング
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    throw new ApiError(
+      "マップローテーション情報を解析できませんでした。",
+      response.status
+    );
   }
 
-  if (data.Error) {
-    throw new Error(data.Error);
+  if (!response.ok) {
+    const errorData = data as Record<string, unknown>;
+    const errorMessage = errorData?.Error || "Unknown error";
+    throw new ApiError(`API request failed: ${response.status} - ${errorMessage}`, response.status);
+  }
+
+  const typedData = data as Record<string, unknown>;
+  if (typedData.Error) {
+    throw new ApiError(String(typedData.Error));
+  }
+
+  // 防御的なデータ抽出
+  const ranked = typedData.ranked as Record<string, unknown> | undefined;
+  if (!ranked) {
+    throw new ApiError("ランクマップデータを取得できませんでした。");
+  }
+
+  const current = ranked.current as Record<string, unknown> | undefined;
+  const next = ranked.next as Record<string, unknown> | undefined;
+
+  if (!current) {
+    throw new ApiError("現在のマップ情報を取得できませんでした。");
   }
 
   return {
     current: {
-      name: data.ranked.current.map,
-      remainingTime: data.ranked.current.remainingTimer,
-      remainingMins: data.ranked.current.remainingMins,
+      name: String(current.map ?? "Unknown"),
+      remainingTime: String(current.remainingTimer ?? ""),
+      remainingMins: Number(current.remainingMins ?? 0),
     },
     next: {
-      name: data.ranked.next.map,
+      name: String(next?.map ?? "Unknown"),
       remainingTime: "",
       remainingMins: 0,
     },

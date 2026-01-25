@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchMapRotation, formatMapStatus } from "./mapRotation.js";
 import { resetRateLimiter } from "./apiRateLimiter.js";
+import { ApiError } from "./apexApi.js";
 
 describe("mapRotation", () => {
   const originalEnv = process.env;
@@ -72,6 +73,31 @@ describe("mapRotation", () => {
 
       await expect(fetchMapRotation()).rejects.toThrow(
         "API request failed: 500"
+      );
+    });
+
+    it("should throw ApiError when JSON parsing fails", async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.reject(new Error("Invalid JSON")),
+      } as Response);
+
+      await expect(fetchMapRotation()).rejects.toThrow(ApiError);
+      await expect(fetchMapRotation()).rejects.toThrow(
+        "マップローテーション情報を解析できませんでした"
+      );
+    });
+
+    it("should throw ApiError when ranked data is missing", async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({}),
+      } as Response);
+
+      await expect(fetchMapRotation()).rejects.toThrow(ApiError);
+      await expect(fetchMapRotation()).rejects.toThrow(
+        "ランクマップデータを取得できませんでした"
       );
     });
   });

@@ -4,6 +4,7 @@ import {
 } from "discord.js";
 import { fetchPlayerStats, formatKills } from "../services/apexApi.js";
 import { RateLimitError } from "../services/apiRateLimiter.js";
+import { ValidationError } from "../utils/validation.js";
 import { endSession, hasActiveSession } from "../services/kdTracker.js";
 import { calculateRankProgress, formatRankProgress } from "../utils/rankCalculator.js";
 
@@ -79,6 +80,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply(lines.join("\n"));
   } catch (error) {
     if (error instanceof RateLimitError) {
+      await interaction.editReply(`⚠️ ${error.message}`);
+      return;
+    }
+    if (error instanceof ValidationError) {
       await interaction.editReply(`⚠️ ${error.message}`);
       return;
     }
