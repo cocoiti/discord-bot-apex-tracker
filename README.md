@@ -119,11 +119,23 @@ npm test
     "season27_split2": {
       "name": "Season 27 Amped Split 2",
       "splitEndDate": "2026-02-10",
-      "ranks": [...]
+      "ranks": [
+        { "name": "Rookie", "minRP": 0 },
+        { "name": "Bronze IV", "minRP": 1000 },
+        ...
+        { "name": "Master", "minRP": 16000 },
+        { "name": "Predator", "minRP": 99999 }
+      ]
     }
   }
 }
 ```
+
+### シーズン更新方法
+
+1. `seasons` に新しいシーズンを追加
+2. `activeSeason` を新しいシーズンのキーに変更
+3. `splitEndDate` を正しい日付（YYYY-MM-DD形式）に設定
 
 ## APIs & Libraries
 
