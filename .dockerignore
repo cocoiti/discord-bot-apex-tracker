@@ -1,0 +1,11 @@
+node_modules/
+src/
+*.ts
+!*.d.ts
+.env
+.git/
+.gitignore
+*.md
+*.log
+vitest.config.ts
+tsconfig.json

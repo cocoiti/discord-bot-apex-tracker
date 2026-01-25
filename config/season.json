@@ -1,0 +1,63 @@
+{
+  "activeSeason": "season27_split2",
+  "seasons": {
+    "season27_split2": {
+      "name": "Season 27 Amped Split 2",
+      "splitEndDate": "2026-02-10",
+      "ranks": [
+        { "name": "Rookie", "minRP": 0 },
+        { "name": "Bronze IV", "minRP": 1000 },
+        { "name": "Bronze III", "minRP": 1500 },
+        { "name": "Bronze II", "minRP": 2000 },
+        { "name": "Bronze I", "minRP": 2500 },
+        { "name": "Silver IV", "minRP": 3000 },
+        { "name": "Silver III", "minRP": 3500 },
+        { "name": "Silver II", "minRP": 4000 },
+        { "name": "Silver I", "minRP": 4500 },
+        { "name": "Gold IV", "minRP": 5250 },
+        { "name": "Gold III", "minRP": 6000 },
+        { "name": "Gold II", "minRP": 6750 },
+        { "name": "Gold I", "minRP": 7500 },
+        { "name": "Platinum IV", "minRP": 8250 },
+        { "name": "Platinum III", "minRP": 9000 },
+        { "name": "Platinum II", "minRP": 10000 },
+        { "name": "Platinum I", "minRP": 11000 },
+        { "name": "Diamond IV", "minRP": 12000 },
+        { "name": "Diamond III", "minRP": 13000 },
+        { "name": "Diamond II", "minRP": 14000 },
+        { "name": "Diamond I", "minRP": 15000 },
+        { "name": "Master", "minRP": 16000 },
+        { "name": "Predator", "minRP": 99999 }
+      ]
+    },
+    "season27_split1": {
+      "name": "Season 27 Amped Split 1",
+      "splitEndDate": "2025-12-16",
+      "ranks": [
+        { "name": "Rookie", "minRP": 0 },
+        { "name": "Bronze IV", "minRP": 1000 },
+        { "name": "Bronze III", "minRP": 1500 },
+        { "name": "Bronze II", "minRP": 2000 },
+        { "name": "Bronze I", "minRP": 2500 },
+        { "name": "Silver IV", "minRP": 3000 },
+        { "name": "Silver III", "minRP": 3500 },
+        { "name": "Silver II", "minRP": 4000 },
+        { "name": "Silver I", "minRP": 4500 },
+        { "name": "Gold IV", "minRP": 5250 },
+        { "name": "Gold III", "minRP": 6000 },
+        { "name": "Gold II", "minRP": 6750 },
+        { "name": "Gold I", "minRP": 7500 },
+        { "name": "Platinum IV", "minRP": 8250 },
+        { "name": "Platinum III", "minRP": 9000 },
+        { "name": "Platinum II", "minRP": 10000 },
+        { "name": "Platinum I", "minRP": 11000 },
+        { "name": "Diamond IV", "minRP": 12000 },
+        { "name": "Diamond III", "minRP": 13000 },
+        { "name": "Diamond II", "minRP": 14000 },
+        { "name": "Diamond I", "minRP": 15000 },
+        { "name": "Master", "minRP": 16000 },
+        { "name": "Predator", "minRP": 99999 }
+      ]
+    }
+  }
+}
