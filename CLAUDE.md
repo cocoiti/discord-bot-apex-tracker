@@ -4,31 +4,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Apex LegendsのRP（ランクポイント）をトラッキングするDiscord Bot。スプリット終了日までに目標ランクに到達するために必要な1日あたりのRPを計算して表示する。
+Apex LegendsのRP（ランクポイント）をトラッキングするDiscord Bot。スプリット終了日までに目標ランク（ティア単位: Platinum → Diamond → Master）に到達するために必要な1日あたりのRPを計算して表示する。
 
 ## Tech Stack
 
-- Node.js + TypeScript (ESM)
+- Node.js 22 + TypeScript (ESM)
 - discord.js v14
-- Apex Legends Status API (https://apexlegendsapi.com)
+- Vitest (testing)
+- Docker
 
 ## Commands
 
 ```bash
-# Install dependencies
-npm install
+npm install          # Install dependencies
+npm run dev          # Run Discord bot (development)
+npm run rank -- <PlayerName> [Platform]  # Test rank command via CLI
+npm run build        # Build for production
+npm start            # Run production build
+npm test             # Run tests (watch mode)
+npm run test:run     # Run tests once
+```
 
-# Development - run Discord bot
-npm run dev
+## Docker
 
-# Development - test rank command via CLI
-npm run rank -- <PlayerName> [Platform]
-
-# Build for production
+```bash
 npm run build
-
-# Run production build
-npm start
+docker compose up -d
+docker compose logs -f
 ```
 
 ## Architecture
@@ -39,7 +41,9 @@ src/
 ├── commands/rank.ts      # /rank slash command
 ├── cli/rank.ts           # CLI version of rank command
 ├── services/apexApi.ts   # Apex Legends API client
-└── utils/rankCalculator.ts # RP calculation logic
+└── utils/
+    ├── rankCalculator.ts      # RP calculation logic
+    └── rankCalculator.test.ts # Unit tests
 
 config/
 └── season.json           # Split end date & rank thresholds (Git managed)
@@ -47,9 +51,10 @@ config/
 
 ## Configuration
 
-- `config/season.json` - スプリット終了日とランクRP閾値を手動編集
+- `config/season.json` - スプリット終了日とランクRP閾値（`activeSeason` でシーズン切り替え）
 - `.env` - APIキー（DISCORD_TOKEN, APEX_API_KEY）
 
 ## API
 
-Apex Legends Status API (`https://api.mozambiquehe.re/bridge`) を使用してプレイヤーのRP情報を取得。Platform指定は `PC`, `PS4`, `X1`, `SWITCH`, `ANY`。
+Apex Legends Status API (`https://api.mozambiquehe.re/bridge`) を使用。
+Platform: `PC`（デフォルト）, `PS4`, `X1`, `SWITCH`
