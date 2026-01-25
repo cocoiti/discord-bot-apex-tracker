@@ -98,6 +98,24 @@ client.once("ready", async () => {
   await fetchAndUpdateRotation();
 });
 
+// Register commands when bot joins a new guild
+client.on("guildCreate", async (guild) => {
+  console.log(`Joined new guild: ${guild.name}`);
+
+  const rest = new REST({ version: "10" }).setToken(
+    process.env.DISCORD_TOKEN!
+  );
+
+  try {
+    await rest.put(Routes.applicationGuildCommands(client.user!.id, guild.id), {
+      body: commands.map((cmd) => cmd.data.toJSON()),
+    });
+    console.log(`Commands registered for new guild: ${guild.name}`);
+  } catch (error) {
+    console.error(`Failed to register commands for guild ${guild.name}:`, error);
+  }
+});
+
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
