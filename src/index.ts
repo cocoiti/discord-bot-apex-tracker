@@ -9,14 +9,27 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
+function scheduleNextUpdate(remainingMins: number) {
+  // Update when map changes, or every 30 minutes if remaining time is long
+  const nextUpdateMins = Math.min(remainingMins + 1, 30);
+  const nextUpdateMs = nextUpdateMins * 60 * 1000;
+
+  console.log(`Next status update in ${nextUpdateMins} minutes`);
+  setTimeout(updateBotStatus, nextUpdateMs);
+}
+
 async function updateBotStatus() {
   try {
     const rotation = await fetchMapRotation();
     const status = formatMapStatus(rotation);
     client.user?.setActivity(status, { type: ActivityType.Playing });
     console.log(`Status updated: ${status}`);
+
+    scheduleNextUpdate(rotation.current.remainingMins);
   } catch (error) {
     console.error("Failed to update status:", error);
+    // Retry after 5 minutes on error
+    setTimeout(updateBotStatus, 5 * 60 * 1000);
   }
 }
 
@@ -37,9 +50,8 @@ client.once("ready", async () => {
     console.error("Failed to register commands:", error);
   }
 
-  // Update status immediately and every 30 minutes
+  // Update status immediately, then schedule based on map remaining time
   await updateBotStatus();
-  setInterval(updateBotStatus, 30 * 60 * 1000);
 });
 
 client.on("interactionCreate", async (interaction) => {
