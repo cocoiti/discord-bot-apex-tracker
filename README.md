@@ -125,6 +125,25 @@ npm test
 }
 ```
 
+## APIs & Libraries
+
+このプロジェクトは以下のAPIとライブラリを使用しています：
+
+### APIs
+
+| API | 用途 | ドキュメント |
+|-----|------|-------------|
+| Apex Legends Status API | プレイヤー統計・マップローテーション取得 | [apexlegendsapi.com](https://apexlegendsapi.com) |
+| Discord API | Botインタラクション | [discord.com/developers](https://discord.com/developers/docs) |
+
+### Libraries
+
+| ライブラリ | 用途 |
+|-----------|------|
+| [discord.js](https://discord.js.org) | Discord Bot フレームワーク |
+| [TypeScript](https://www.typescriptlang.org) | 型安全な開発 |
+| [Vitest](https://vitest.dev) | テストフレームワーク |
+
 ## License
 
 MIT
