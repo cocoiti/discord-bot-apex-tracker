@@ -1,0 +1,121 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { execute, data } from "./rank.js";
+import * as apexApi from "../services/apexApi.js";
+
+// Mock apexApi
+vi.mock("../services/apexApi.js", () => ({
+  fetchPlayerStats: vi.fn(),
+}));
+
+describe("rank command", () => {
+  const mockInteraction = {
+    options: {
+      getString: vi.fn(),
+    },
+    deferReply: vi.fn(),
+    editReply: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("data", () => {
+    it("should have correct command name", () => {
+      expect(data.name).toBe("rank");
+    });
+
+    it("should have player option as required", () => {
+      const playerOption = data.options.find(
+        (opt) => opt.toJSON().name === "player"
+      );
+      expect(playerOption).toBeDefined();
+      expect(playerOption?.toJSON().required).toBe(true);
+    });
+
+    it("should have platform option as optional", () => {
+      const platformOption = data.options.find(
+        (opt) => opt.toJSON().name === "platform"
+      );
+      expect(platformOption).toBeDefined();
+      expect(platformOption?.toJSON().required).toBe(false);
+    });
+  });
+
+  describe("execute", () => {
+    it("should fetch player stats and reply with rank progress", async () => {
+      mockInteraction.options.getString
+        .mockReturnValueOnce("TestPlayer") // player
+        .mockReturnValueOnce("PC"); // platform
+
+      vi.mocked(apexApi.fetchPlayerStats).mockResolvedValue({
+        name: "TestPlayer",
+        platform: "PC",
+        level: 500,
+        currentRP: 10862,
+        rankName: "Platinum",
+        rankDiv: 2,
+      });
+
+      await execute(mockInteraction as any);
+
+      expect(mockInteraction.deferReply).toHaveBeenCalled();
+      expect(apexApi.fetchPlayerStats).toHaveBeenCalledWith("TestPlayer", "PC");
+      expect(mockInteraction.editReply).toHaveBeenCalledWith(
+        expect.stringContaining("TestPlayer")
+      );
+      expect(mockInteraction.editReply).toHaveBeenCalledWith(
+        expect.stringContaining("Platinum II")
+      );
+    });
+
+    it("should use PC as default platform", async () => {
+      mockInteraction.options.getString
+        .mockReturnValueOnce("TestPlayer") // player
+        .mockReturnValueOnce(null); // platform (not provided)
+
+      vi.mocked(apexApi.fetchPlayerStats).mockResolvedValue({
+        name: "TestPlayer",
+        platform: "PC",
+        level: 500,
+        currentRP: 5000,
+        rankName: "Gold",
+        rankDiv: 4,
+      });
+
+      await execute(mockInteraction as any);
+
+      expect(apexApi.fetchPlayerStats).toHaveBeenCalledWith("TestPlayer", "PC");
+    });
+
+    it("should handle API errors gracefully", async () => {
+      mockInteraction.options.getString
+        .mockReturnValueOnce("InvalidPlayer")
+        .mockReturnValueOnce("PC");
+
+      vi.mocked(apexApi.fetchPlayerStats).mockRejectedValue(
+        new Error("Player not found")
+      );
+
+      await execute(mockInteraction as any);
+
+      expect(mockInteraction.editReply).toHaveBeenCalledWith(
+        "エラー: Player not found"
+      );
+    });
+
+    it("should handle unknown errors", async () => {
+      mockInteraction.options.getString
+        .mockReturnValueOnce("TestPlayer")
+        .mockReturnValueOnce("PC");
+
+      vi.mocked(apexApi.fetchPlayerStats).mockRejectedValue("Unknown error");
+
+      await execute(mockInteraction as any);
+
+      expect(mockInteraction.editReply).toHaveBeenCalledWith(
+        "エラー: 不明なエラーが発生しました"
+      );
+    });
+  });
+});
