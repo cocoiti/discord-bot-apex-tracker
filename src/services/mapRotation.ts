@@ -1,3 +1,5 @@
+import { rateLimitedFetch } from "./apiRateLimiter.js";
+
 export interface MapInfo {
   name: string;
   remainingTime: string;
@@ -15,7 +17,7 @@ export async function fetchMapRotation(): Promise<MapRotation> {
     throw new Error("APEX_API_KEY is not set");
   }
 
-  const response = await fetch(
+  const response = await rateLimitedFetch(
     `https://api.mozambiquehe.re/maprotation?auth=${apiKey}&version=2`
   );
 

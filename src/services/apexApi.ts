@@ -1,3 +1,5 @@
+import { rateLimitedFetch } from "./apiRateLimiter.js";
+
 export interface ApexPlayerStats {
   name: string;
   platform: string;
@@ -23,7 +25,7 @@ export async function fetchPlayerStats(
     platform: platform,
   });
 
-  const response = await fetch(
+  const response = await rateLimitedFetch(
     `https://api.mozambiquehe.re/bridge?${params.toString()}`
   );
 

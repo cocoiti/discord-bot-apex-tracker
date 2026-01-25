@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchPlayerStats, formatKills } from "./apexApi.js";
+import { resetRateLimiter } from "./apiRateLimiter.js";
 
 describe("apexApi", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
+    resetRateLimiter();
     process.env = { ...originalEnv, APEX_API_KEY: "test-api-key" };
     vi.stubGlobal("fetch", vi.fn());
   });
@@ -40,15 +42,11 @@ describe("apexApi", () => {
 
       const result = await fetchPlayerStats("TestPlayer", "PC");
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining("api.mozambiquehe.re/bridge")
-      );
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining("player=TestPlayer")
-      );
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining("platform=PC")
-      );
+      expect(fetch).toHaveBeenCalled();
+      const calledUrl = vi.mocked(fetch).mock.calls[0][0] as string;
+      expect(calledUrl).toContain("api.mozambiquehe.re/bridge");
+      expect(calledUrl).toContain("player=TestPlayer");
+      expect(calledUrl).toContain("platform=PC");
       expect(result).toEqual({
         name: "TestPlayer",
         platform: "PC",
@@ -81,9 +79,9 @@ describe("apexApi", () => {
 
       await fetchPlayerStats("TestPlayer");
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining("platform=PC")
-      );
+      expect(fetch).toHaveBeenCalled();
+      const calledUrl = vi.mocked(fetch).mock.calls[0][0] as string;
+      expect(calledUrl).toContain("platform=PC");
     });
 
     it("should throw error when API key is not set", async () => {
@@ -138,9 +136,9 @@ describe("apexApi", () => {
 
       await fetchPlayerStats("PSPlayer", "PS4");
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining("platform=PS4")
-      );
+      expect(fetch).toHaveBeenCalled();
+      const calledUrl = vi.mocked(fetch).mock.calls[0][0] as string;
+      expect(calledUrl).toContain("platform=PS4");
     });
 
     it("should handle missing kills data", async () => {

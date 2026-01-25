@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fetchMapRotation, formatMapStatus } from "./mapRotation.js";
+import { resetRateLimiter } from "./apiRateLimiter.js";
 
 describe("mapRotation", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
+    resetRateLimiter();
     process.env = { ...originalEnv, APEX_API_KEY: "test-api-key" };
     vi.stubGlobal("fetch", vi.fn());
   });
@@ -36,9 +38,9 @@ describe("mapRotation", () => {
 
       const result = await fetchMapRotation();
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining("api.mozambiquehe.re/maprotation")
-      );
+      expect(fetch).toHaveBeenCalled();
+      const calledUrl = vi.mocked(fetch).mock.calls[0][0] as string;
+      expect(calledUrl).toContain("api.mozambiquehe.re/maprotation");
       expect(result).toEqual({
         current: {
           name: "World's Edge",
