@@ -20,6 +20,10 @@ const MAX_RETRY_COUNT = 5;
 const RETRY_INTERVAL_MS = 5 * 60 * 1000; // 5分
 let retryCount = 0;
 
+// タイマー管理（Graceful Shutdown用）
+let statusUpdateTimer: NodeJS.Timeout | null = null;
+let isShuttingDown = false;
+
 function formatRemainingTime(mins: number): string {
   if (mins <= 0) return "まもなく";
   const hours = Math.floor(mins / 60);
@@ -31,7 +35,7 @@ function formatRemainingTime(mins: number): string {
 }
 
 function updateStatusDisplay() {
-  if (!cachedRotation || !lastFetchTime) return;
+  if (isShuttingDown || !cachedRotation || !lastFetchTime) return;
 
   // Calculate elapsed minutes since last fetch
   const elapsedMs = Date.now() - lastFetchTime.getTime();
@@ -47,11 +51,13 @@ function updateStatusDisplay() {
     fetchAndUpdateRotation();
   } else {
     // Schedule next display update in 1 minute
-    setTimeout(updateStatusDisplay, 60 * 1000);
+    statusUpdateTimer = setTimeout(updateStatusDisplay, 60 * 1000);
   }
 }
 
 async function fetchAndUpdateRotation() {
+  if (isShuttingDown) return;
+
   try {
     cachedRotation = await fetchMapRotation();
     lastFetchTime = new Date();
@@ -62,14 +68,14 @@ async function fetchAndUpdateRotation() {
     console.log(`Status updated from API: ${status}`);
 
     // Schedule next display update in 1 minute
-    setTimeout(updateStatusDisplay, 60 * 1000);
+    statusUpdateTimer = setTimeout(updateStatusDisplay, 60 * 1000);
   } catch (error) {
     retryCount++;
     console.error(`Failed to fetch map rotation (attempt ${retryCount}/${MAX_RETRY_COUNT}):`, error);
 
     if (retryCount < MAX_RETRY_COUNT) {
       // リトライ上限に達していない場合は再試行
-      setTimeout(fetchAndUpdateRotation, RETRY_INTERVAL_MS);
+      statusUpdateTimer = setTimeout(fetchAndUpdateRotation, RETRY_INTERVAL_MS);
     } else {
       // リトライ上限に達した場合はステータスを更新して停止
       console.error("Max retry count reached. Map rotation updates disabled.");
@@ -151,5 +157,34 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 });
+
+// Graceful Shutdown
+async function shutdown(signal: string) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+
+  // タイマーをクリア
+  if (statusUpdateTimer) {
+    clearTimeout(statusUpdateTimer);
+    statusUpdateTimer = null;
+    console.log("Timers cleared.");
+  }
+
+  // Discord clientを破棄
+  try {
+    client.destroy();
+    console.log("Discord client destroyed.");
+  } catch (error) {
+    console.error("Error destroying Discord client:", error);
+  }
+
+  console.log("Shutdown complete.");
+  process.exit(0);
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 client.login(process.env.DISCORD_TOKEN);
