@@ -1,11 +1,8 @@
 node_modules/
-src/
-*.ts
-!*.d.ts
+dist/
 .env
 .git/
 .gitignore
 *.md
 *.log
-vitest.config.ts
-tsconfig.json
+.github/
