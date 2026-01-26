@@ -53,19 +53,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
-    const startTimeStr = result.startTime.toLocaleTimeString("ja-JP", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const endTimeStr = result.endTime.toLocaleTimeString("ja-JP", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const startTimestamp = Math.floor(result.startTime.getTime() / 1000);
+    const endTimestamp = Math.floor(result.endTime.getTime() / 1000);
     const rpSign = result.rpChange >= 0 ? "+" : "";
 
     const lines: string[] = [];
     lines.push(`🏁 **${stats.name}** のセッション結果`);
-    lines.push(`${startTimeStr} → ${endTimeStr}`);
+    lines.push(`<t:${startTimestamp}:t> → <t:${endTimestamp}:t>`);
     lines.push("");
     lines.push(`**セッション成績**`);
     lines.push(`キル: **${result.kills}**`);

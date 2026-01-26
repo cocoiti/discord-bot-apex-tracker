@@ -48,14 +48,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     startSession(playerName, platform, stats.kills, stats.currentRP);
 
     const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
-    const startTime = new Date().toLocaleTimeString("ja-JP", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const startTimestamp = Math.floor(Date.now() / 1000);
 
     const lines: string[] = [];
     lines.push(`✅ **${stats.name}** のセッションを開始しました`);
-    lines.push(`開始時刻: ${startTime}`);
+    lines.push(`開始時刻: <t:${startTimestamp}:t>`);
     lines.push("");
     lines.push(formatRankProgress(stats.name, progress).split("\n").slice(1).join("\n"));
     if (stats.kills > 0) {
