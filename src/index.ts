@@ -5,6 +5,13 @@ import * as rankstartCommand from "./commands/rankstart.js";
 import * as rankendCommand from "./commands/rankend.js";
 import { fetchMapRotation, MapRotation } from "./services/mapRotation.js";
 
+// 起動時の環境変数バリデーション
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+if (!DISCORD_TOKEN) {
+  console.error("Error: DISCORD_TOKEN environment variable is not set.");
+  process.exit(1);
+}
+
 const commands = [rankCommand, rankstartCommand, rankendCommand];
 
 const client = new Client({
@@ -85,17 +92,21 @@ async function fetchAndUpdateRotation() {
 }
 
 client.once("clientReady", async () => {
-  console.log(`Logged in as ${client.user?.tag}`);
+  const botUser = client.user;
+  if (!botUser) {
+    console.error("Error: client.user is not available after ready event.");
+    return;
+  }
 
-  const rest = new REST({ version: "10" }).setToken(
-    process.env.DISCORD_TOKEN!
-  );
+  console.log(`Logged in as ${botUser.tag}`);
+
+  const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
 
   try {
     console.log("Registering slash commands...");
 
     // Clear global commands to avoid duplicates
-    await rest.put(Routes.applicationCommands(client.user!.id), {
+    await rest.put(Routes.applicationCommands(botUser.id), {
       body: [],
     });
     console.log("Global commands cleared");
@@ -103,7 +114,7 @@ client.once("clientReady", async () => {
     // Register as guild commands for immediate availability
     const guilds = client.guilds.cache;
     for (const [guildId, guild] of guilds) {
-      await rest.put(Routes.applicationGuildCommands(client.user!.id, guildId), {
+      await rest.put(Routes.applicationGuildCommands(botUser.id, guildId), {
         body: commands.map((cmd) => cmd.data.toJSON()),
       });
       console.log(`Commands registered for guild: ${guild.name}`);
@@ -122,12 +133,13 @@ client.once("clientReady", async () => {
 client.on("guildCreate", async (guild) => {
   console.log(`Joined new guild: ${guild.name}`);
 
-  const rest = new REST({ version: "10" }).setToken(
-    process.env.DISCORD_TOKEN!
-  );
+  const botUser = client.user;
+  if (!botUser) return;
+
+  const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
 
   try {
-    await rest.put(Routes.applicationGuildCommands(client.user!.id, guild.id), {
+    await rest.put(Routes.applicationGuildCommands(botUser.id, guild.id), {
       body: commands.map((cmd) => cmd.data.toJSON()),
     });
     console.log(`Commands registered for new guild: ${guild.name}`);
@@ -187,4 +199,4 @@ async function shutdown(signal: string) {
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(DISCORD_TOKEN);

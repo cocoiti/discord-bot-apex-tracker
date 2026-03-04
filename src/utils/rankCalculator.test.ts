@@ -52,9 +52,37 @@ describe("rankCalculator", () => {
       const days = getDaysRemaining();
       expect(days).toBeGreaterThanOrEqual(0);
     });
+
+    it("should calculate correct days with injected date", () => {
+      // season28 splitEndDate is "2026-03-26"
+      const now = new Date(2026, 2, 16); // March 16, 2026
+      const days = getDaysRemaining(now);
+      expect(days).toBe(10);
+    });
+
+    it("should return 0 on split end date", () => {
+      const now = new Date(2026, 2, 26); // March 26, 2026 (end date)
+      const days = getDaysRemaining(now);
+      expect(days).toBe(0);
+    });
+
+    it("should return 0 when split end date has passed", () => {
+      const now = new Date(2026, 3, 1); // April 1, 2026
+      const days = getDaysRemaining(now);
+      expect(days).toBe(0);
+    });
   });
 
   describe("calculateRankProgress", () => {
+    it("should handle Rookie rank", () => {
+      const progress = calculateRankProgress(500, "Rookie", 0);
+
+      expect(progress.currentRankName).toBe("Rookie");
+      expect(progress.currentTier).toBe("Rookie");
+      expect(progress.nextTier).toEqual({ tier: "Bronze", minRP: 1000 });
+      expect(progress.nextTierRPNeeded).toBe(500);
+    });
+
     it("should calculate progress for Platinum II player", () => {
       const progress = calculateRankProgress(10862, "Platinum", 2);
 

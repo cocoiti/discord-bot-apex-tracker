@@ -32,7 +32,7 @@ function getActiveSeason() {
 }
 
 function formatRankName(rankName: string, rankDiv: number): string {
-  if (rankName === "Master" || rankName === "Predator") {
+  if (rankName === "Rookie" || rankName === "Master" || rankName === "Predator") {
     return rankName;
   }
   const divMap: { [key: number]: string } = { 1: "I", 2: "II", 3: "III", 4: "IV" };
@@ -83,10 +83,13 @@ export function getNextTier(currentTier: string): TierInfo | null {
   };
 }
 
-export function getDaysRemaining(): number {
+export function getDaysRemaining(now?: Date): number {
   const season = getActiveSeason();
-  const endDate = new Date(season.splitEndDate);
-  const today = new Date();
+  // Date-only文字列（"YYYY-MM-DD"）はUTCとして解釈されるため、
+  // 手動でパースしてローカル日付として扱う
+  const [year, month, day] = season.splitEndDate.split("-").map(Number);
+  const endDate = new Date(year, month - 1, day);
+  const today = now ? new Date(now.getTime()) : new Date();
   today.setHours(0, 0, 0, 0);
   endDate.setHours(0, 0, 0, 0);
   const diffTime = endDate.getTime() - today.getTime();

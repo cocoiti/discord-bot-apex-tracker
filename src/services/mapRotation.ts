@@ -18,8 +18,13 @@ export async function fetchMapRotation(): Promise<MapRotation> {
     throw new ApiError("APEX_API_KEY is not set");
   }
 
+  const params = new URLSearchParams({
+    auth: apiKey,
+    version: "2",
+  });
+
   const response = await rateLimitedFetch(
-    `https://api.mozambiquehe.re/maprotation?auth=${apiKey}&version=2`
+    `https://api.mozambiquehe.re/maprotation?${params.toString()}`
   );
 
   // JSONパースエラーハンドリング
