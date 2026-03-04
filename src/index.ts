@@ -3,6 +3,7 @@ import { Client, GatewayIntentBits, REST, Routes, ActivityType } from "discord.j
 import * as rankCommand from "./commands/rank.js";
 import * as rankstartCommand from "./commands/rankstart.js";
 import * as rankendCommand from "./commands/rankend.js";
+import * as versionCommand from "./commands/version.js";
 import { fetchMapRotation, MapRotation } from "./services/mapRotation.js";
 
 // 起動時の環境変数バリデーション
@@ -12,7 +13,7 @@ if (!DISCORD_TOKEN) {
   process.exit(1);
 }
 
-const commands = [rankCommand, rankstartCommand, rankendCommand];
+const commands = [rankCommand, rankstartCommand, rankendCommand, versionCommand];
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
