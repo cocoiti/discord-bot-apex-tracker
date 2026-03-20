@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { handleVoiceStateUpdate } from "./voiceStateUpdate.js";
 import * as registration from "../services/registration.js";
-import * as notificationSettings from "../services/notificationSettings.js";
+import * as guildSettings from "../services/guildSettings.js";
 import * as sessionStore from "../services/sessionStore.js";
 import * as apexApi from "../services/apexApi.js";
 import * as rpSnapshot from "../services/rpSnapshot.js";
 
 vi.mock("../services/registration.js");
-vi.mock("../services/notificationSettings.js");
+vi.mock("../services/guildSettings.js");
 vi.mock("../services/sessionStore.js");
 vi.mock("../services/apexApi.js");
 vi.mock("../services/rpSnapshot.js");
@@ -15,6 +15,7 @@ vi.mock("../services/rpSnapshot.js");
 function makeVoiceState(channelId: string | null, channelName: string | null, userId = "user1") {
   return {
     id: userId,
+    guild: { id: "guild1" },
     channel: channelId
       ? { id: channelId, name: channelName }
       : null,
@@ -24,8 +25,11 @@ function makeVoiceState(channelId: string | null, channelName: string | null, us
 function makeClient() {
   const sendFn = vi.fn();
   return {
-    users: {
-      fetch: vi.fn().mockResolvedValue({ send: sendFn }),
+    channels: {
+      fetch: vi.fn().mockResolvedValue({
+        isTextBased: () => true,
+        send: sendFn,
+      }),
     },
     _sendFn: sendFn,
   } as any;
@@ -75,7 +79,7 @@ describe("voiceStateUpdate", () => {
     expect(sessionStore.endDbSession).not.toHaveBeenCalled();
   });
 
-  it("should start session when joining Apex channel", async () => {
+  it("should start session and notify channel when joining Apex channel", async () => {
     const oldState = makeVoiceState(null, null);
     const newState = makeVoiceState("ch1", "Apex Ranked");
     const client = makeClient();
@@ -95,20 +99,20 @@ describe("voiceStateUpdate", () => {
       rankDiv: 4,
       kills: 1000,
     });
-    vi.mocked(notificationSettings.getNotificationConfig).mockResolvedValue({
-      dmOnJoin: true,
-      dmOnLeave: true,
-    });
+    vi.mocked(guildSettings.getNotifyChannelId).mockResolvedValue("notify-ch");
 
     await handleVoiceStateUpdate(oldState, newState, client);
 
     expect(sessionStore.startDbSession).toHaveBeenCalledWith(
       "user1", "TestPlayer", "PC", 1000, 5000, "voice", "Apex Ranked"
     );
+    expect(client.channels.fetch).toHaveBeenCalledWith("notify-ch");
     expect(client._sendFn).toHaveBeenCalled();
+    const message = client._sendFn.mock.calls[0][0];
+    expect(message).toContain("<@user1>");
   });
 
-  it("should end session when leaving Apex channel", async () => {
+  it("should end session and notify channel when leaving Apex channel", async () => {
     const oldState = makeVoiceState("ch1", "Apex Ranked");
     const newState = makeVoiceState(null, null);
     const client = makeClient();
@@ -159,10 +163,7 @@ describe("voiceStateUpdate", () => {
       rankDiv: 4,
       kills: 1003,
     });
-    vi.mocked(notificationSettings.getNotificationConfig).mockResolvedValue({
-      dmOnJoin: true,
-      dmOnLeave: true,
-    });
+    vi.mocked(guildSettings.getNotifyChannelId).mockResolvedValue("notify-ch");
 
     await handleVoiceStateUpdate(oldState, newState, client);
 
@@ -171,6 +172,8 @@ describe("voiceStateUpdate", () => {
       "user1", 5120, "Gold", 4, 1003
     );
     expect(client._sendFn).toHaveBeenCalled();
+    const message = client._sendFn.mock.calls[0][0];
+    expect(message).toContain("<@user1>");
   });
 
   it("should start session when joining channel with 'apex' in the middle of name", async () => {
@@ -193,10 +196,7 @@ describe("voiceStateUpdate", () => {
       rankDiv: 4,
       kills: 1000,
     });
-    vi.mocked(notificationSettings.getNotificationConfig).mockResolvedValue({
-      dmOnJoin: true,
-      dmOnLeave: true,
-    });
+    vi.mocked(guildSettings.getNotifyChannelId).mockResolvedValue("notify-ch");
 
     await handleVoiceStateUpdate(oldState, newState, client);
 
@@ -238,7 +238,7 @@ describe("voiceStateUpdate", () => {
     consoleSpy.mockRestore();
   });
 
-  it("should not send DM when endDbSession returns null", async () => {
+  it("should not send notification when endDbSession returns null", async () => {
     const oldState = makeVoiceState("ch1", "Apex Ranked");
     const newState = makeVoiceState(null, null);
     const client = makeClient();
@@ -281,42 +281,7 @@ describe("voiceStateUpdate", () => {
     expect(rpSnapshot.recordSnapshot).not.toHaveBeenCalled();
   });
 
-  it("should log error but not throw when DM fails with non-50007 error", async () => {
-    const oldState = makeVoiceState(null, null);
-    const newState = makeVoiceState("ch1", "Apex Ranked");
-    const client = makeClient();
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    vi.mocked(registration.getRegistration).mockResolvedValue({
-      discordId: "user1",
-      playerName: "TestPlayer",
-      platform: "PC",
-    });
-    vi.mocked(sessionStore.getActiveDbSession).mockResolvedValue(null);
-    vi.mocked(apexApi.fetchPlayerStats).mockResolvedValue({
-      name: "TestPlayer",
-      platform: "PC",
-      level: 500,
-      currentRP: 5000,
-      rankName: "Gold",
-      rankDiv: 4,
-      kills: 1000,
-    });
-    vi.mocked(notificationSettings.getNotificationConfig).mockResolvedValue({
-      dmOnJoin: true,
-      dmOnLeave: true,
-    });
-    // Simulate DM failure with non-50007 error
-    client._sendFn.mockRejectedValue(Object.assign(new Error("Unknown error"), { code: 50013 }));
-
-    await handleVoiceStateUpdate(oldState, newState, client);
-
-    expect(sessionStore.startDbSession).toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
-  });
-
-  it("should not DM when notifications are disabled", async () => {
+  it("should skip notification when notify channel is not set", async () => {
     const oldState = makeVoiceState(null, null);
     const newState = makeVoiceState("ch1", "Apex Ranked");
     const client = makeClient();
@@ -336,10 +301,7 @@ describe("voiceStateUpdate", () => {
       rankDiv: 4,
       kills: 1000,
     });
-    vi.mocked(notificationSettings.getNotificationConfig).mockResolvedValue({
-      dmOnJoin: false,
-      dmOnLeave: false,
-    });
+    vi.mocked(guildSettings.getNotifyChannelId).mockResolvedValue(null);
 
     await handleVoiceStateUpdate(oldState, newState, client);
 
