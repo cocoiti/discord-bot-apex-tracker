@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, serial, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, timestamp, serial } from "drizzle-orm/pg-core";
 
 export const registrations = pgTable("registrations", {
   discordId: text("discord_id").primaryKey(),
@@ -27,12 +27,10 @@ export const sessions = pgTable("sessions", {
   channelName: text("channel_name"),
 });
 
-export const notificationSettings = pgTable("notification_settings", {
-  discordId: text("discord_id")
-    .primaryKey()
-    .references(() => registrations.discordId, { onDelete: "cascade" }),
-  dmOnJoin: boolean("dm_on_join").notNull().default(true),
-  dmOnLeave: boolean("dm_on_leave").notNull().default(true),
+export const guildSettings = pgTable("guild_settings", {
+  guildId: text("guild_id").primaryKey(),
+  notifyChannelId: text("notify_channel_id"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const rpSnapshots = pgTable("rp_snapshots", {

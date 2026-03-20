@@ -1,6 +1,6 @@
-import { VoiceState, Client } from "discord.js";
+import { VoiceState, Client, TextChannel } from "discord.js";
 import { getRegistration } from "../services/registration.js";
-import { getNotificationConfig } from "../services/notificationSettings.js";
+import { getNotifyChannelId } from "../services/guildSettings.js";
 import {
   startDbSession,
   getActiveDbSession,
@@ -15,24 +15,6 @@ import {
 
 function isApexChannel(channelName: string): boolean {
   return channelName.toLowerCase().includes("apex");
-}
-
-async function sendDmSafely(
-  client: Client,
-  userId: string,
-  message: string
-): Promise<void> {
-  try {
-    const user = await client.users.fetch(userId);
-    await user.send(message);
-  } catch (error: unknown) {
-    // 50007: Cannot send messages to this user (DM disabled)
-    const discordError = error as { code?: number };
-    if (discordError.code === 50007) {
-      return; // DM無効ユーザーは静かにスキップ
-    }
-    console.error(`Failed to send DM to ${userId}:`, error);
-  }
 }
 
 export async function handleVoiceStateUpdate(
@@ -57,21 +39,24 @@ export async function handleVoiceStateUpdate(
   const reg = await getRegistration(userId);
   if (!reg) return;
 
+  const guildId = newState.guild.id;
+
   // Apex VCに参加
   if (!wasInApex && isInApex) {
-    await handleJoin(client, userId, reg.playerName, reg.platform, newChannel!.name);
+    await handleJoin(client, guildId, userId, reg.playerName, reg.platform, newChannel!.name);
     return;
   }
 
   // Apex VCから退出
   if (wasInApex && !isInApex) {
-    await handleLeave(client, userId, reg.playerName, reg.platform);
+    await handleLeave(client, guildId, userId, reg.playerName, reg.platform);
     return;
   }
 }
 
 async function handleJoin(
   client: Client,
+  guildId: string,
   userId: string,
   playerName: string,
   platform: string,
@@ -93,8 +78,11 @@ async function handleJoin(
       channelName
     );
 
-    const config = await getNotificationConfig(userId);
-    if (!config.dmOnJoin) return;
+    const notifyChannelId = await getNotifyChannelId(guildId);
+    if (!notifyChannelId) return;
+
+    const notifyChannel = await client.channels.fetch(notifyChannelId);
+    if (!notifyChannel?.isTextBased()) return;
 
     const progress = calculateRankProgress(
       stats.currentRP,
@@ -104,7 +92,7 @@ async function handleJoin(
     const startTimestamp = Math.floor(Date.now() / 1000);
 
     const lines: string[] = [];
-    lines.push(`🎮 **${channelName}** への参加を検出しました`);
+    lines.push(`🎮 <@${userId}> が **${channelName}** に参加しました`);
     lines.push(`セッションを自動開始しました（<t:${startTimestamp}:t>）`);
     lines.push("");
     lines.push(
@@ -114,7 +102,7 @@ async function handleJoin(
         .join("\n")
     );
 
-    await sendDmSafely(client, userId, lines.join("\n"));
+    await (notifyChannel as TextChannel).send(lines.join("\n"));
   } catch (error) {
     console.error(`Failed to start voice session for ${userId}:`, error);
   }
@@ -122,6 +110,7 @@ async function handleJoin(
 
 async function handleLeave(
   client: Client,
+  guildId: string,
   userId: string,
   playerName: string,
   platform: string
@@ -143,8 +132,11 @@ async function handleLeave(
       stats.kills
     );
 
-    const config = await getNotificationConfig(userId);
-    if (!config.dmOnLeave) return;
+    const notifyChannelId = await getNotifyChannelId(guildId);
+    if (!notifyChannelId) return;
+
+    const notifyChannel = await client.channels.fetch(notifyChannelId);
+    if (!notifyChannel?.isTextBased()) return;
 
     const progress = calculateRankProgress(
       stats.currentRP,
@@ -156,7 +148,7 @@ async function handleLeave(
     const rpSign = (result.rpChange ?? 0) >= 0 ? "+" : "";
 
     const lines: string[] = [];
-    lines.push(`🏁 セッション結果 (**${stats.name}**)`);
+    lines.push(`🏁 セッション結果 — <@${userId}> (**${stats.name}**)`);
     lines.push(`<t:${startTimestamp}:t> → <t:${endTimestamp}:t>`);
     lines.push("");
     lines.push(`**セッション成績**`);
@@ -172,7 +164,7 @@ async function handleLeave(
         .join("\n")
     );
 
-    await sendDmSafely(client, userId, lines.join("\n"));
+    await (notifyChannel as TextChannel).send(lines.join("\n"));
   } catch (error) {
     console.error(`Failed to end voice session for ${userId}:`, error);
   }
