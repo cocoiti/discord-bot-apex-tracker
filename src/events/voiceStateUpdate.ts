@@ -14,7 +14,7 @@ import {
 } from "../utils/rankCalculator.js";
 
 function isApexChannel(channelName: string): boolean {
-  return channelName.toLowerCase().startsWith("apex");
+  return channelName.toLowerCase().includes("apex");
 }
 
 async function sendDmSafely(

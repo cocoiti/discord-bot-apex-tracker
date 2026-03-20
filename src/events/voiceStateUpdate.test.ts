@@ -173,6 +173,38 @@ describe("voiceStateUpdate", () => {
     expect(client._sendFn).toHaveBeenCalled();
   });
 
+  it("should start session when joining channel with 'apex' in the middle of name", async () => {
+    const oldState = makeVoiceState(null, null);
+    const newState = makeVoiceState("ch1", "ランク Apex");
+    const client = makeClient();
+
+    vi.mocked(registration.getRegistration).mockResolvedValue({
+      discordId: "user1",
+      playerName: "TestPlayer",
+      platform: "PC",
+    });
+    vi.mocked(sessionStore.getActiveDbSession).mockResolvedValue(null);
+    vi.mocked(apexApi.fetchPlayerStats).mockResolvedValue({
+      name: "TestPlayer",
+      platform: "PC",
+      level: 500,
+      currentRP: 5000,
+      rankName: "Gold",
+      rankDiv: 4,
+      kills: 1000,
+    });
+    vi.mocked(notificationSettings.getNotificationConfig).mockResolvedValue({
+      dmOnJoin: true,
+      dmOnLeave: true,
+    });
+
+    await handleVoiceStateUpdate(oldState, newState, client);
+
+    expect(sessionStore.startDbSession).toHaveBeenCalledWith(
+      "user1", "TestPlayer", "PC", 1000, 5000, "voice", "ランク Apex"
+    );
+  });
+
   it("should continue session when moving between Apex channels", async () => {
     const oldState = makeVoiceState("ch1", "Apex Ranked");
     const newState = makeVoiceState("ch2", "Apex Casual");
