@@ -7,6 +7,9 @@ import { RateLimitError } from "../services/apiRateLimiter.js";
 import { ValidationError } from "../utils/validation.js";
 import { endSession, hasActiveSession } from "../services/kdTracker.js";
 import { calculateRankProgress, formatRankProgress } from "../utils/rankCalculator.js";
+import { resolvePlayer } from "../utils/resolvePlayer.js";
+import { getActiveDbSession, endDbSession } from "../services/sessionStore.js";
+import { recordSnapshot } from "../services/rpSnapshot.js";
 
 export const data = new SlashCommandBuilder()
   .setName("rankend")
@@ -14,8 +17,8 @@ export const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName("player")
-      .setDescription("プレイヤー名")
-      .setRequired(true)
+      .setDescription("プレイヤー名（登録済みなら省略可）")
+      .setRequired(false)
   )
   .addStringOption((option) =>
     option
@@ -31,47 +34,104 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const playerName = interaction.options.getString("player", true);
-  const platform = interaction.options.getString("platform") || "PC";
-
   await interaction.deferReply();
 
+  const resolved = await resolvePlayer(interaction);
+  if (!resolved) {
+    await interaction.editReply(
+      "⚠️ プレイヤー名を指定するか、`/register set` でアカウントを登録してください。"
+    );
+    return;
+  }
+
+  const { playerName, platform, fromRegistration } = resolved;
+
   try {
-    if (!hasActiveSession(playerName, platform)) {
-      await interaction.editReply(
-        `⚠️ **${playerName}** のセッションが見つかりません。\n\`/rankstart\` で開始してください。`
+    // 登録ユーザーはDB永続セッション、未登録はインメモリ
+    if (fromRegistration) {
+      const activeSession = await getActiveDbSession(interaction.user.id);
+      if (!activeSession) {
+        await interaction.editReply(
+          `⚠️ **${playerName}** のセッションが見つかりません。\n\`/rankstart\` で開始してください。`
+        );
+        return;
+      }
+
+      const stats = await fetchPlayerStats(playerName, platform);
+      const result = await endDbSession(interaction.user.id, stats.kills, stats.currentRP);
+
+      if (!result) {
+        await interaction.editReply("セッションの終了中にエラーが発生しました。");
+        return;
+      }
+
+      // RP推移スナップショットを記録
+      await recordSnapshot(
+        interaction.user.id,
+        stats.currentRP,
+        stats.rankName,
+        stats.rankDiv,
+        stats.kills
       );
-      return;
-    }
 
-    const stats = await fetchPlayerStats(playerName, platform);
-    const result = endSession(playerName, platform, stats.kills, stats.currentRP);
+      const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
+      const startTimestamp = Math.floor(result.startTime.getTime() / 1000);
+      const endTimestamp = Math.floor(Date.now() / 1000);
+      const rpSign = (result.rpChange ?? 0) >= 0 ? "+" : "";
 
-    if (!result) {
-      await interaction.editReply("セッションの終了中にエラーが発生しました。");
-      return;
-    }
-
-    const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
-    const startTimestamp = Math.floor(result.startTime.getTime() / 1000);
-    const endTimestamp = Math.floor(result.endTime.getTime() / 1000);
-    const rpSign = result.rpChange >= 0 ? "+" : "";
-
-    const lines: string[] = [];
-    lines.push(`🏁 **${stats.name}** のセッション結果`);
-    lines.push(`<t:${startTimestamp}:t> → <t:${endTimestamp}:t>`);
-    lines.push("");
-    lines.push(`**セッション成績**`);
-    lines.push(`キル: **${result.kills}**`);
-    lines.push(`RP: ${result.startRP} → ${result.endRP} (**${rpSign}${result.rpChange}**)`);
-    lines.push("");
-    lines.push(formatRankProgress(stats.name, progress).split("\n").slice(1).join("\n"));
-    if (stats.kills > 0) {
+      const lines: string[] = [];
+      lines.push(`🏁 **${stats.name}** のセッション結果`);
+      lines.push(`<t:${startTimestamp}:t> → <t:${endTimestamp}:t>`);
       lines.push("");
-      lines.push(`📊 ${formatKills(stats.kills)}`);
-    }
+      lines.push(`**セッション成績**`);
+      lines.push(`キル: **${result.killsGained ?? 0}**`);
+      lines.push(`RP: ${result.startRp} → ${result.endRp} (**${rpSign}${result.rpChange}**)`);
+      lines.push("");
+      lines.push(formatRankProgress(stats.name, progress).split("\n").slice(1).join("\n"));
+      if (stats.kills > 0) {
+        lines.push("");
+        lines.push(`📊 ${formatKills(stats.kills)}`);
+      }
 
-    await interaction.editReply(lines.join("\n"));
+      await interaction.editReply(lines.join("\n"));
+    } else {
+      // 未登録ユーザー: インメモリセッション
+      if (!hasActiveSession(playerName, platform)) {
+        await interaction.editReply(
+          `⚠️ **${playerName}** のセッションが見つかりません。\n\`/rankstart\` で開始してください。`
+        );
+        return;
+      }
+
+      const stats = await fetchPlayerStats(playerName, platform);
+      const result = endSession(playerName, platform, stats.kills, stats.currentRP);
+
+      if (!result) {
+        await interaction.editReply("セッションの終了中にエラーが発生しました。");
+        return;
+      }
+
+      const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
+      const startTimestamp = Math.floor(result.startTime.getTime() / 1000);
+      const endTimestamp = Math.floor(result.endTime.getTime() / 1000);
+      const rpSign = result.rpChange >= 0 ? "+" : "";
+
+      const lines: string[] = [];
+      lines.push(`🏁 **${stats.name}** のセッション結果`);
+      lines.push(`<t:${startTimestamp}:t> → <t:${endTimestamp}:t>`);
+      lines.push("");
+      lines.push(`**セッション成績**`);
+      lines.push(`キル: **${result.kills}**`);
+      lines.push(`RP: ${result.startRP} → ${result.endRP} (**${rpSign}${result.rpChange}**)`);
+      lines.push("");
+      lines.push(formatRankProgress(stats.name, progress).split("\n").slice(1).join("\n"));
+      if (stats.kills > 0) {
+        lines.push("");
+        lines.push(`📊 ${formatKills(stats.kills)}`);
+      }
+
+      await interaction.editReply(lines.join("\n"));
+    }
   } catch (error) {
     if (error instanceof RateLimitError) {
       await interaction.editReply(`⚠️ ${error.message}`);

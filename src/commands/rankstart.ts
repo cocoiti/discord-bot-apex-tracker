@@ -7,6 +7,8 @@ import { RateLimitError } from "../services/apiRateLimiter.js";
 import { ValidationError } from "../utils/validation.js";
 import { startSession, hasActiveSession } from "../services/kdTracker.js";
 import { calculateRankProgress, formatRankProgress } from "../utils/rankCalculator.js";
+import { resolvePlayer } from "../utils/resolvePlayer.js";
+import { getActiveDbSession, startDbSession } from "../services/sessionStore.js";
 
 export const data = new SlashCommandBuilder()
   .setName("rankstart")
@@ -14,8 +16,8 @@ export const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName("player")
-      .setDescription("プレイヤー名")
-      .setRequired(true)
+      .setDescription("プレイヤー名（登録済みなら省略可）")
+      .setRequired(false)
   )
   .addStringOption((option) =>
     option
@@ -31,21 +33,51 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const playerName = interaction.options.getString("player", true);
-  const platform = interaction.options.getString("platform") || "PC";
-
   await interaction.deferReply();
 
+  const resolved = await resolvePlayer(interaction);
+  if (!resolved) {
+    await interaction.editReply(
+      "⚠️ プレイヤー名を指定するか、`/register set` でアカウントを登録してください。"
+    );
+    return;
+  }
+
+  const { playerName, platform, fromRegistration } = resolved;
+
   try {
-    if (hasActiveSession(playerName, platform)) {
-      await interaction.editReply(
-        `⚠️ **${playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
-      );
-      return;
+    // 登録ユーザーはDB永続セッション、未登録はインメモリ
+    if (fromRegistration) {
+      const existing = await getActiveDbSession(interaction.user.id);
+      if (existing) {
+        await interaction.editReply(
+          `⚠️ **${existing.playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
+        );
+        return;
+      }
+    } else {
+      if (hasActiveSession(playerName, platform)) {
+        await interaction.editReply(
+          `⚠️ **${playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
+        );
+        return;
+      }
     }
 
     const stats = await fetchPlayerStats(playerName, platform);
-    startSession(playerName, platform, stats.kills, stats.currentRP);
+
+    if (fromRegistration) {
+      await startDbSession(
+        interaction.user.id,
+        stats.name,
+        platform,
+        stats.kills,
+        stats.currentRP,
+        "manual"
+      );
+    } else {
+      startSession(playerName, platform, stats.kills, stats.currentRP);
+    }
 
     const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
     const startTimestamp = Math.floor(Date.now() / 1000);

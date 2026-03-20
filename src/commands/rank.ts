@@ -9,6 +9,7 @@ import {
   calculateRankProgress,
   formatRankProgress,
 } from "../utils/rankCalculator.js";
+import { resolvePlayer } from "../utils/resolvePlayer.js";
 
 export const data = new SlashCommandBuilder()
   .setName("rank")
@@ -16,8 +17,8 @@ export const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName("player")
-      .setDescription("プレイヤー名")
-      .setRequired(true)
+      .setDescription("プレイヤー名（登録済みなら省略可）")
+      .setRequired(false)
   )
   .addStringOption((option) =>
     option
@@ -33,10 +34,17 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const playerName = interaction.options.getString("player", true);
-  const platform = interaction.options.getString("platform") || "PC";
-
   await interaction.deferReply();
+
+  const resolved = await resolvePlayer(interaction);
+  if (!resolved) {
+    await interaction.editReply(
+      "⚠️ プレイヤー名を指定するか、`/register set` でアカウントを登録してください。"
+    );
+    return;
+  }
+
+  const { playerName, platform } = resolved;
 
   try {
     const stats = await fetchPlayerStats(playerName, platform);

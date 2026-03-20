@@ -4,7 +4,11 @@ import * as rankCommand from "./commands/rank.js";
 import * as rankstartCommand from "./commands/rankstart.js";
 import * as rankendCommand from "./commands/rankend.js";
 import * as versionCommand from "./commands/version.js";
+import * as registerCommand from "./commands/register.js";
+import * as notifyCommand from "./commands/notify.js";
 import { fetchMapRotation, MapRotation } from "./services/mapRotation.js";
+import { closeDb } from "./db/client.js";
+import { handleVoiceStateUpdate } from "./events/voiceStateUpdate.js";
 
 // 起動時の環境変数バリデーション
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -13,10 +17,10 @@ if (!DISCORD_TOKEN) {
   process.exit(1);
 }
 
-const commands = [rankCommand, rankstartCommand, rankendCommand, versionCommand];
+const commands = [rankCommand, rankstartCommand, rankendCommand, versionCommand, registerCommand, notifyCommand];
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
 });
 
 // Cache for map rotation data
@@ -149,6 +153,14 @@ client.on("guildCreate", async (guild) => {
   }
 });
 
+client.on("voiceStateUpdate", async (oldState, newState) => {
+  try {
+    await handleVoiceStateUpdate(oldState, newState, client);
+  } catch (error) {
+    console.error("Error handling voice state update:", error);
+  }
+});
+
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -183,6 +195,13 @@ async function shutdown(signal: string) {
     clearTimeout(statusUpdateTimer);
     statusUpdateTimer = null;
     console.log("Timers cleared.");
+  }
+
+  // DB接続を閉じる
+  try {
+    await closeDb();
+  } catch (error) {
+    console.error("Error closing database:", error);
   }
 
   // Discord clientを破棄
