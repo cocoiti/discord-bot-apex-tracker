@@ -15,6 +15,14 @@ export async function runMigrations() {
     console.log("Running migrations...");
     await migrate(db, { migrationsFolder: "./drizzle" });
     console.log("Migrations complete.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("=== Migration Error ===");
+    console.error(`Message: ${message}`);
+    if (error instanceof Error && error.stack) {
+      console.error(`Stack: ${error.stack}`);
+    }
+    throw error;
   } finally {
     await sql.end();
   }
