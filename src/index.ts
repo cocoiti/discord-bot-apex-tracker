@@ -9,11 +9,20 @@ import * as notifyCommand from "./commands/notify.js";
 import { fetchMapRotation, MapRotation } from "./services/mapRotation.js";
 import { closeDb } from "./db/client.js";
 import { handleVoiceStateUpdate } from "./events/voiceStateUpdate.js";
+import { runMigrations } from "./db/migrate.js";
 
 // 起動時の環境変数バリデーション
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 if (!DISCORD_TOKEN) {
   console.error("Error: DISCORD_TOKEN environment variable is not set.");
+  process.exit(1);
+}
+
+// 起動時にDBマイグレーションを自動適用
+try {
+  await runMigrations();
+} catch (error) {
+  console.error("Migration failed, aborting startup:", error);
   process.exit(1);
 }
 
