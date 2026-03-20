@@ -10,9 +10,7 @@ export const registrations = pgTable("registrations", {
 
 export const sessions = pgTable("sessions", {
   id: serial("id").primaryKey(),
-  discordId: text("discord_id")
-    .notNull()
-    .references(() => registrations.discordId, { onDelete: "cascade" }),
+  discordId: text("discord_id").notNull(),
   playerName: text("player_name").notNull(),
   platform: text("platform").notNull(),
   startTime: timestamp("start_time").notNull(),

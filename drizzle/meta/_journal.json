@@ -15,6 +15,13 @@
       "when": 1774076400000,
       "tag": "0001_channel_notify",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774162800000,
+      "tag": "0002_session_no_fk",
+      "breakpoints": true
     }
   ]
 }

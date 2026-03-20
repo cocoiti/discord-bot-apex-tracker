@@ -54,6 +54,28 @@ config/
 - `config/season.json` - スプリット終了日とランクRP閾値（`activeSeason` でシーズン切り替え）
 - `.env` - APIキー（DISCORD_TOKEN, APEX_API_KEY）
 
+## Database & Migrations
+
+- ORM: Drizzle ORM (PostgreSQL)
+- マイグレーションファイル: `drizzle/` ディレクトリ
+- スナップショット: `drizzle/meta/` ディレクトリ
+- マイグレーションはBot起動時に自動実行（`src/db/migrate.ts`）
+
+### マイグレーション作成手順
+
+1. `src/db/schema.ts` にスキーマ変更を記述
+2. `drizzle/` に SQL マイグレーションファイルを作成（例: `0002_session_no_fk.sql`）
+3. `drizzle/meta/_journal.json` に新しいエントリを追加（idx, tag, when を設定）
+4. `drizzle/meta/` に対応するスナップショット JSON を作成
+
+### リリース時の注意事項
+
+- マイグレーションはBot起動時に自動実行されるため、**破壊的変更（カラム削除、型変更等）はデータ移行を先に行うこと**
+- FK制約の削除・追加はデータ不整合に注意。既存データが制約を満たすか事前確認が必要
+- ロールバックが必要な場合は逆方向のマイグレーションSQLを手動で実行する（Drizzleには自動ロールバック機能がない）
+- Docker環境ではDBボリュームが永続化されているか確認してからデプロイする
+- 大きなスキーマ変更時は段階的にリリースする（例: 1. カラム追加 → 2. コード変更 → 3. 旧カラム削除）
+
 ## API
 
 Apex Legends Status API (`https://api.mozambiquehe.re/bridge`) を使用。

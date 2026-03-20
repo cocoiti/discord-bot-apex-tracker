@@ -5,7 +5,6 @@ import {
 import { fetchPlayerStats, formatKills } from "../services/apexApi.js";
 import { RateLimitError } from "../services/apiRateLimiter.js";
 import { ValidationError } from "../utils/validation.js";
-import { startSession, hasActiveSession } from "../services/kdTracker.js";
 import { calculateRankProgress, formatRankProgress } from "../utils/rankCalculator.js";
 import { resolvePlayer } from "../utils/resolvePlayer.js";
 import { getActiveDbSession, startDbSession } from "../services/sessionStore.js";
@@ -43,41 +42,27 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  const { playerName, platform, fromRegistration } = resolved;
+  const { playerName, platform } = resolved;
 
   try {
-    // 登録ユーザーはDB永続セッション、未登録はインメモリ
-    if (fromRegistration) {
-      const existing = await getActiveDbSession(interaction.user.id);
-      if (existing) {
-        await interaction.editReply(
-          `⚠️ **${existing.playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
-        );
-        return;
-      }
-    } else {
-      if (hasActiveSession(playerName, platform)) {
-        await interaction.editReply(
-          `⚠️ **${playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
-        );
-        return;
-      }
+    const existing = await getActiveDbSession(interaction.user.id);
+    if (existing) {
+      await interaction.editReply(
+        `⚠️ **${existing.playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
+      );
+      return;
     }
 
     const stats = await fetchPlayerStats(playerName, platform);
 
-    if (fromRegistration) {
-      await startDbSession(
-        interaction.user.id,
-        stats.name,
-        platform,
-        stats.kills,
-        stats.currentRP,
-        "manual"
-      );
-    } else {
-      startSession(playerName, platform, stats.kills, stats.currentRP);
-    }
+    await startDbSession(
+      interaction.user.id,
+      stats.name,
+      platform,
+      stats.kills,
+      stats.currentRP,
+      "manual"
+    );
 
     const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
     const startTimestamp = Math.floor(Date.now() / 1000);
