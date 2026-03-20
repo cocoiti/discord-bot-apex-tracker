@@ -10,7 +10,9 @@
     "dev": "tsx src/index.ts",
     "rank": "tsx src/cli/rank.ts",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts"
   },
   "keywords": [
     "discord",
@@ -23,12 +25,15 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "drizzle-kit": "^0.31.10",
     "tsx": "^4.7.0",
     "typescript": "^5.3.0",
     "vitest": "^4.0.18"
   },
   "dependencies": {
     "discord.js": "^14.14.0",
-    "dotenv": "^16.3.0"
+    "dotenv": "^16.3.0",
+    "drizzle-orm": "^0.45.1",
+    "postgres": "^3.4.8"
   }
 }

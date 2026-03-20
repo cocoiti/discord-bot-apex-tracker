@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { execute, data } from "./rank.js";
 import * as apexApi from "../services/apexApi.js";
+import * as resolvePlayerModule from "../utils/resolvePlayer.js";
 
 // Mock apexApi
 vi.mock("../services/apexApi.js", async (importOriginal) => {
@@ -11,11 +12,17 @@ vi.mock("../services/apexApi.js", async (importOriginal) => {
   };
 });
 
+// Mock resolvePlayer
+vi.mock("../utils/resolvePlayer.js", () => ({
+  resolvePlayer: vi.fn(),
+}));
+
 describe("rank command", () => {
   const mockInteraction = {
     options: {
       getString: vi.fn(),
     },
+    user: { id: "123456" },
     deferReply: vi.fn(),
     editReply: vi.fn(),
   };
@@ -29,12 +36,12 @@ describe("rank command", () => {
       expect(data.name).toBe("rank");
     });
 
-    it("should have player option as required", () => {
+    it("should have player option as optional", () => {
       const playerOption = data.options.find(
         (opt) => opt.toJSON().name === "player"
       );
       expect(playerOption).toBeDefined();
-      expect(playerOption?.toJSON().required).toBe(true);
+      expect(playerOption?.toJSON().required).toBe(false);
     });
 
     it("should have platform option as optional", () => {
@@ -48,9 +55,11 @@ describe("rank command", () => {
 
   describe("execute", () => {
     it("should fetch player stats and reply with rank progress", async () => {
-      mockInteraction.options.getString
-        .mockReturnValueOnce("TestPlayer") // player
-        .mockReturnValueOnce("PC"); // platform
+      vi.mocked(resolvePlayerModule.resolvePlayer).mockResolvedValue({
+        playerName: "TestPlayer",
+        platform: "PC",
+        fromRegistration: false,
+      });
 
       vi.mocked(apexApi.fetchPlayerStats).mockResolvedValue({
         name: "TestPlayer",
@@ -75,9 +84,11 @@ describe("rank command", () => {
     });
 
     it("should use PC as default platform", async () => {
-      mockInteraction.options.getString
-        .mockReturnValueOnce("TestPlayer") // player
-        .mockReturnValueOnce(null); // platform (not provided)
+      vi.mocked(resolvePlayerModule.resolvePlayer).mockResolvedValue({
+        playerName: "TestPlayer",
+        platform: "PC",
+        fromRegistration: false,
+      });
 
       vi.mocked(apexApi.fetchPlayerStats).mockResolvedValue({
         name: "TestPlayer",
@@ -94,10 +105,22 @@ describe("rank command", () => {
       expect(apexApi.fetchPlayerStats).toHaveBeenCalledWith("TestPlayer", "PC");
     });
 
+    it("should show error when no player resolved", async () => {
+      vi.mocked(resolvePlayerModule.resolvePlayer).mockResolvedValue(null);
+
+      await execute(mockInteraction as any);
+
+      expect(mockInteraction.editReply).toHaveBeenCalledWith(
+        expect.stringContaining("/register set")
+      );
+    });
+
     it("should handle API errors gracefully", async () => {
-      mockInteraction.options.getString
-        .mockReturnValueOnce("InvalidPlayer")
-        .mockReturnValueOnce("PC");
+      vi.mocked(resolvePlayerModule.resolvePlayer).mockResolvedValue({
+        playerName: "InvalidPlayer",
+        platform: "PC",
+        fromRegistration: false,
+      });
 
       vi.mocked(apexApi.fetchPlayerStats).mockRejectedValue(
         new Error("Player not found")
@@ -111,9 +134,11 @@ describe("rank command", () => {
     });
 
     it("should handle unknown errors", async () => {
-      mockInteraction.options.getString
-        .mockReturnValueOnce("TestPlayer")
-        .mockReturnValueOnce("PC");
+      vi.mocked(resolvePlayerModule.resolvePlayer).mockResolvedValue({
+        playerName: "TestPlayer",
+        platform: "PC",
+        fromRegistration: false,
+      });
 
       vi.mocked(apexApi.fetchPlayerStats).mockRejectedValue("Unknown error");
 

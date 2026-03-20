@@ -8,6 +8,7 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src/ ./src/
 COPY config/ ./config/
+COPY drizzle/ ./drizzle/
 
 RUN npm run build
 
@@ -20,5 +21,6 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist/ ./dist/
 COPY config/ ./config/
+COPY drizzle/ ./drizzle/
 
 CMD ["node", "dist/index.js"]
