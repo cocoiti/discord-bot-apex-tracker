@@ -57,7 +57,7 @@ describe("rankCalculator", () => {
       // season28 splitEndDate is "2026-03-26"
       const now = new Date(2026, 2, 16); // March 16, 2026
       const days = getDaysRemaining(now);
-      expect(days).toBe(10);
+      expect(days).toBe(9);
     });
 
     it("should return 0 on split end date", () => {

@@ -120,7 +120,8 @@ export function getDaysRemaining(now?: Date): number {
   endDate.setHours(0, 0, 0, 0);
   const diffTime = endDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(0, diffDays);
+  // 終了日は早朝3時頃に切り替わるため、実質的なプレイ可能日数は-1日
+  return Math.max(0, diffDays - 1);
 }
 
 export function calculateRankProgress(
@@ -177,7 +178,10 @@ export function formatRankProgress(
   lines.push(`シーズン: ${progress.seasonName}`);
   lines.push(`現在のRP: **${progress.currentRP}** (${progress.currentRankName})`);
   const [y, m, d] = progress.splitEndDate.split("-").map(Number);
-  lines.push(`スプリット終了: **${y}/${m}/${d} 早朝** (残り **${progress.daysRemaining}日**)`);
+  const remaining = progress.daysRemaining === 0
+    ? "**当日**"
+    : `残り **${progress.daysRemaining}日**`;
+  lines.push(`スプリット終了: **${y}/${m}/${d} 早朝** (${remaining})`);
   lines.push("");
 
   if (progress.nextTier) {
