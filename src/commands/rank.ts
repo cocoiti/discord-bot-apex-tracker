@@ -17,7 +17,7 @@ export const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName("player")
-      .setDescription("プレイヤー名（登録済みなら省略可）")
+      .setDescription("プレイヤー名（登録済みの場合は省略可能）")
       .setRequired(false)
   )
   .addStringOption((option) =>

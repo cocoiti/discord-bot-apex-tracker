@@ -17,7 +17,7 @@ export const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName("player")
-      .setDescription("プレイヤー名（登録済みなら省略可）")
+      .setDescription("プレイヤー名（登録済みの場合は省略可能）")
       .setRequired(false)
   )
   .addStringOption((option) =>
@@ -59,7 +59,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const result = await endDbSession(interaction.user.id, stats.kills, stats.currentRP);
 
     if (!result) {
-      await interaction.editReply("セッションの終了中にエラーが発生しました。");
+      await interaction.editReply("セッションの終了時にエラーが発生しました。");
       return;
     }
 

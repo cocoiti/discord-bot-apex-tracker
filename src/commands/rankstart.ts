@@ -15,7 +15,7 @@ export const data = new SlashCommandBuilder()
   .addStringOption((option) =>
     option
       .setName("player")
-      .setDescription("プレイヤー名（登録済みなら省略可）")
+      .setDescription("プレイヤー名（登録済みの場合は省略可能）")
       .setRequired(false)
   )
   .addStringOption((option) =>
@@ -48,7 +48,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const existing = await getActiveDbSession(interaction.user.id);
     if (existing) {
       await interaction.editReply(
-        `⚠️ **${existing.playerName}** のセッションは既に開始されています。\n終了するには \`/rankend\` を使用してください。`
+        `⚠️ **${existing.playerName}** のセッションはすでに開始されています。\n終了するには \`/rankend\` を使用してください。`
       );
       return;
     }

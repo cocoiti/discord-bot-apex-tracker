@@ -47,7 +47,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (channelId) {
       await interaction.editReply(`現在の通知チャンネル: <#${channelId}>`);
     } else {
-      await interaction.editReply("通知チャンネルは設定されていません。");
+      await interaction.editReply("通知チャンネルが設定されていません。");
     }
     return;
   }
