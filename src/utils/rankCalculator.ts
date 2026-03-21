@@ -26,9 +26,34 @@ export interface RankProgress {
 
 const TIERS = ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Predator"];
 
-function getActiveSeason() {
-  const activeSeasonKey = seasonConfig.activeSeason;
-  return seasonConfig.seasons[activeSeasonKey as keyof typeof seasonConfig.seasons];
+function getActiveSeason(now?: Date) {
+  const today = now ?? new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const seasons = Object.values(seasonConfig.seasons);
+
+  // splitEndDate が今日以降で最も近いシーズンを選択
+  const upcoming = seasons
+    .map((s) => {
+      const [y, m, d] = s.splitEndDate.split("-").map(Number);
+      return { season: s, endDate: new Date(y, m - 1, d) };
+    })
+    .filter(({ endDate }) => endDate >= today)
+    .sort((a, b) => a.endDate.getTime() - b.endDate.getTime());
+
+  if (upcoming.length > 0) {
+    return upcoming[0].season;
+  }
+
+  // 全シーズンが過去の場合、最も新しいものを返す
+  const all = seasons
+    .map((s) => {
+      const [y, m, d] = s.splitEndDate.split("-").map(Number);
+      return { season: s, endDate: new Date(y, m - 1, d) };
+    })
+    .sort((a, b) => b.endDate.getTime() - a.endDate.getTime());
+
+  return all[0].season;
 }
 
 function formatRankName(rankName: string, rankDiv: number): string {
