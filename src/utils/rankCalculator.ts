@@ -17,6 +17,7 @@ export interface RankProgress {
   nextTier: TierInfo | null;
   nextNextTier: TierInfo | null;
   daysRemaining: number;
+  splitEndDate: string;
   nextTierRPNeeded: number | null;
   nextTierDailyRP: number | null;
   nextNextTierRPNeeded: number | null;
@@ -158,6 +159,7 @@ export function calculateRankProgress(
     nextTier,
     nextNextTier,
     daysRemaining,
+    splitEndDate: season.splitEndDate,
     nextTierRPNeeded,
     nextTierDailyRP,
     nextNextTierRPNeeded,
@@ -174,7 +176,8 @@ export function formatRankProgress(
   lines.push(`**${playerName}** のランク情報`);
   lines.push(`シーズン: ${progress.seasonName}`);
   lines.push(`現在のRP: **${progress.currentRP}** (${progress.currentRankName})`);
-  lines.push(`スプリット終了まで: **${progress.daysRemaining}日**`);
+  const [y, m, d] = progress.splitEndDate.split("-").map(Number);
+  lines.push(`スプリット終了: **${y}/${m}/${d} 早朝** (残り **${progress.daysRemaining}日**)`);
   lines.push("");
 
   if (progress.nextTier) {
