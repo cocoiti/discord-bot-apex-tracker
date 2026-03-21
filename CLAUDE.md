@@ -25,7 +25,11 @@ npm test             # Run tests (watch mode)
 npm run test:run     # Run tests once
 ```
 
-## Docker
+## Deploy
+
+mainブランチにpushすると自動的にデプロイされる。
+
+## Docker（ローカル開発用）
 
 ```bash
 npm run build
