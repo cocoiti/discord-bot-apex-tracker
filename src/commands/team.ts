@@ -65,15 +65,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   const lines: string[] = [];
   lines.push(`🎲 チーム分け（${members.length}人 → ${teams.length}チーム）`);
-  lines.push("");
 
   for (let i = 0; i < teams.length; i++) {
+    lines.push("");
     const icon = TEAM_ICONS[i % TEAM_ICONS.length];
     lines.push(`${icon} チーム${i + 1}`);
     for (const m of teams[i]) {
       lines.push(`  - ${m.displayName}`);
     }
-    lines.push("");
   }
 
   await interaction.reply(lines.join("\n"));
