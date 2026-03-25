@@ -71,7 +71,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const icon = TEAM_ICONS[i % TEAM_ICONS.length];
     lines.push(`${icon} チーム${i + 1}`);
     for (const m of teams[i]) {
-      lines.push(`  - ${m.displayName}`);
+      lines.push(`- ${m.displayName}`);
     }
   }
 
