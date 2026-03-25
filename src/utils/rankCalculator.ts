@@ -28,19 +28,18 @@ export interface RankProgress {
 const TIERS = ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Predator"];
 
 function getActiveSeason(now?: Date) {
-  const today = now ?? new Date();
-  today.setHours(0, 0, 0, 0);
+  const currentTime = now ?? new Date();
 
   const seasons = Object.values(seasonConfig.seasons);
 
-  // splitEndDate が今日以降で最も近いシーズンを選択
+  // スプリット切り替えは早朝3時のため、終了日の3:00を基準に比較する
   const upcoming = seasons
     .map((s) => {
       const [y, m, d] = s.splitEndDate.split("-").map(Number);
-      return { season: s, endDate: new Date(y, m - 1, d) };
+      return { season: s, endDateTime: new Date(y, m - 1, d, 3, 0, 0) };
     })
-    .filter(({ endDate }) => endDate >= today)
-    .sort((a, b) => a.endDate.getTime() - b.endDate.getTime());
+    .filter(({ endDateTime }) => endDateTime > currentTime)
+    .sort((a, b) => a.endDateTime.getTime() - b.endDateTime.getTime());
 
   if (upcoming.length > 0) {
     return upcoming[0].season;
