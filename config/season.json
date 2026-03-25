@@ -31,7 +31,7 @@
     },
     "season28": {
       "name": "Season 28 Breach",
-      "splitEndDate": "2026-03-26",
+      "splitEndDate": "2026-03-25",
       "ranks": [
         { "name": "Rookie", "minRP": 0 },
         { "name": "Bronze IV", "minRP": 1000 },
