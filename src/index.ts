@@ -6,6 +6,7 @@ import * as rankendCommand from "./commands/rankend.js";
 import * as versionCommand from "./commands/version.js";
 import * as registerCommand from "./commands/register.js";
 import * as notifyCommand from "./commands/notify.js";
+import * as teamCommand from "./commands/team.js";
 import { fetchMapRotation, MapRotation } from "./services/mapRotation.js";
 import { closeDb } from "./db/client.js";
 import { handleVoiceStateUpdate } from "./events/voiceStateUpdate.js";
@@ -26,7 +27,7 @@ try {
   process.exit(1);
 }
 
-const commands = [rankCommand, rankstartCommand, rankendCommand, versionCommand, registerCommand, notifyCommand];
+const commands = [rankCommand, rankstartCommand, rankendCommand, versionCommand, registerCommand, notifyCommand, teamCommand];
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],

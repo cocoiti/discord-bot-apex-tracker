@@ -54,22 +54,23 @@ describe("rankCalculator", () => {
     });
 
     it("should calculate correct days with injected date", () => {
-      // season28 splitEndDate is "2026-03-26"
+      // season28 splitEndDate is "2026-03-25"
       const now = new Date(2026, 2, 16); // March 16, 2026
       const days = getDaysRemaining(now);
-      expect(days).toBe(9);
+      expect(days).toBe(8); // 25-16=9, -1(早朝切り替え)=8
     });
 
     it("should return 0 on split end date", () => {
-      const now = new Date(2026, 2, 26); // March 26, 2026 (end date)
+      const now = new Date(2026, 2, 25); // March 25, 2026 (end date)
       const days = getDaysRemaining(now);
       expect(days).toBe(0);
     });
 
     it("should return 0 when split end date has passed", () => {
-      const now = new Date(2026, 3, 1); // April 1, 2026
+      // 終了日を過ぎると次シーズンが選択されるため、season29_split1 (2026-05-06) の残日数になる
+      const now = new Date(2026, 2, 26); // March 26, 2026
       const days = getDaysRemaining(now);
-      expect(days).toBe(0);
+      expect(days).toBe(40); // 5/6 - 3/26 = 41, -1 = 40
     });
   });
 

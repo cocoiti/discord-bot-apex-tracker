@@ -109,7 +109,7 @@ export function getNextTier(currentTier: string): TierInfo | null {
 }
 
 export function getDaysRemaining(now?: Date): number {
-  const season = getActiveSeason();
+  const season = getActiveSeason(now);
   // Date-only文字列（"YYYY-MM-DD"）はUTCとして解釈されるため、
   // 手動でパースしてローカル日付として扱う
   const [year, month, day] = season.splitEndDate.split("-").map(Number);
