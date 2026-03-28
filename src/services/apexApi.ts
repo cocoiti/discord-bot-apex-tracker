@@ -94,5 +94,8 @@ export async function fetchPlayerStats(
 }
 
 export function formatKills(kills: number): string {
+  if (kills === 0) {
+    return `累計キル: 不明 (バナーにキルトラッカーを装備してください)`;
+  }
   return `累計キル: ${kills.toLocaleString()}`;
 }

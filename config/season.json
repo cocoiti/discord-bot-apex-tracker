@@ -1,7 +1,7 @@
 {
   "seasons": {
-    "season29_split1": {
-      "name": "Season 29 Split 1",
+    "season28_split2": {
+      "name": "Season 28 Breach Split 2",
       "splitEndDate": "2026-05-06",
       "ranks": [
         { "name": "Rookie", "minRP": 0 },
@@ -29,8 +29,8 @@
         { "name": "Predator", "minRP": 99999 }
       ]
     },
-    "season28": {
-      "name": "Season 28 Breach",
+    "season28_split1": {
+      "name": "Season 28 Breach Split 1",
       "splitEndDate": "2026-03-25",
       "ranks": [
         { "name": "Rookie", "minRP": 0 },

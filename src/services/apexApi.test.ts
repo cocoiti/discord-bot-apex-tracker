@@ -237,9 +237,9 @@ describe("apexApi", () => {
       expect(result).toBe("累計キル: 5,000");
     });
 
-    it("should handle zero kills", () => {
+    it("should handle zero kills with tracker warning", () => {
       const result = formatKills(0);
-      expect(result).toBe("累計キル: 0");
+      expect(result).toBe("累計キル: 不明 (バナーにキルトラッカーを装備してください)");
     });
   });
 });
