@@ -11,7 +11,7 @@ describe("rankCalculator", () => {
   describe("getRankFromConfig", () => {
     it("should return rank info for valid rank name", () => {
       const rank = getRankFromConfig("Platinum II");
-      expect(rank).toEqual({ name: "Platinum II", minRP: 10000 });
+      expect(rank).toEqual({ name: "Platinum II", minRP: 9800 });
     });
 
     it("should return null for invalid rank name", () => {
@@ -23,12 +23,12 @@ describe("rankCalculator", () => {
   describe("getNextTier", () => {
     it("should return Diamond for Platinum", () => {
       const nextTier = getNextTier("Platinum");
-      expect(nextTier).toEqual({ tier: "Diamond", minRP: 12000 });
+      expect(nextTier).toEqual({ tier: "Diamond", minRP: 11400 });
     });
 
     it("should return Master for Diamond", () => {
       const nextTier = getNextTier("Diamond");
-      expect(nextTier).toEqual({ tier: "Master", minRP: 16000 });
+      expect(nextTier).toEqual({ tier: "Master", minRP: 15000 });
     });
 
     it("should return Predator for Master", () => {
@@ -90,10 +90,10 @@ describe("rankCalculator", () => {
       expect(progress.currentRP).toBe(10862);
       expect(progress.currentRankName).toBe("Platinum II");
       expect(progress.currentTier).toBe("Platinum");
-      expect(progress.nextTier).toEqual({ tier: "Diamond", minRP: 12000 });
-      expect(progress.nextTierRPNeeded).toBe(1138);
-      expect(progress.nextNextTier).toEqual({ tier: "Master", minRP: 16000 });
-      expect(progress.nextNextTierRPNeeded).toBe(5138);
+      expect(progress.nextTier).toEqual({ tier: "Diamond", minRP: 11400 });
+      expect(progress.nextTierRPNeeded).toBe(538);
+      expect(progress.nextNextTier).toEqual({ tier: "Master", minRP: 15000 });
+      expect(progress.nextNextTierRPNeeded).toBe(4138);
     });
 
     it("should calculate progress for Gold IV player", () => {
@@ -101,8 +101,8 @@ describe("rankCalculator", () => {
 
       expect(progress.currentRankName).toBe("Gold IV");
       expect(progress.currentTier).toBe("Gold");
-      expect(progress.nextTier).toEqual({ tier: "Platinum", minRP: 8250 });
-      expect(progress.nextTierRPNeeded).toBe(2750);
+      expect(progress.nextTier).toEqual({ tier: "Platinum", minRP: 8200 });
+      expect(progress.nextTierRPNeeded).toBe(2700);
     });
 
     it("should handle Master rank", () => {
@@ -118,8 +118,8 @@ describe("rankCalculator", () => {
 
       expect(progress.currentRankName).toBe("Diamond III");
       expect(progress.currentTier).toBe("Diamond");
-      expect(progress.nextTier).toEqual({ tier: "Master", minRP: 16000 });
-      expect(progress.nextTierRPNeeded).toBe(2500);
+      expect(progress.nextTier).toEqual({ tier: "Master", minRP: 15000 });
+      expect(progress.nextTierRPNeeded).toBe(1500);
     });
   });
 
@@ -132,8 +132,8 @@ describe("rankCalculator", () => {
       expect(formatted).toContain("10862");
       expect(formatted).toContain("Platinum II");
       expect(formatted).toContain("Diamond");
-      expect(formatted).toContain("12000 RP");
-      expect(formatted).toContain("1138");
+      expect(formatted).toContain("11400 RP");
+      expect(formatted).toContain("538");
     });
 
     it("should show message for highest rank", () => {
