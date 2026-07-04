@@ -16,13 +16,13 @@ Apex LegendsのRP（ランクポイント）をトラッキングするDiscord B
 ## Commands
 
 ```bash
-npm install          # Install dependencies
-npm run dev          # Run Discord bot (development)
-npm run rank -- <PlayerName> [Platform]  # Test rank command via CLI
-npm run build        # Build for production
-npm start            # Run production build
-npm test             # Run tests (watch mode)
-npm run test:run     # Run tests once
+pnpm install         # Install dependencies
+pnpm run dev         # Run Discord bot (development)
+pnpm run rank -- <PlayerName> [Platform]  # Test rank command via CLI
+pnpm run build       # Build for production
+pnpm start           # Run production build
+pnpm test            # Run tests (watch mode)
+pnpm run test:run    # Run tests once
 ```
 
 ## Deploy
