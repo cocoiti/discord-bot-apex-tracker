@@ -7,6 +7,8 @@ import * as versionCommand from "./commands/version.js";
 import * as registerCommand from "./commands/register.js";
 import * as notifyCommand from "./commands/notify.js";
 import * as teamCommand from "./commands/team.js";
+import * as updateCommand from "./commands/update.js";
+import { checkAndBroadcastNews, isAutoCheckEnabled } from "./commands/update.js";
 import { fetchMapRotation, MapRotation } from "./services/mapRotation.js";
 import { closeDb } from "./db/client.js";
 import { handleVoiceStateUpdate } from "./events/voiceStateUpdate.js";
@@ -27,7 +29,7 @@ try {
   process.exit(1);
 }
 
-const commands = [rankCommand, rankstartCommand, rankendCommand, versionCommand, registerCommand, notifyCommand, teamCommand];
+const commands = [rankCommand, rankstartCommand, rankendCommand, versionCommand, registerCommand, notifyCommand, teamCommand, updateCommand];
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
@@ -44,7 +46,25 @@ let retryCount = 0;
 
 // タイマー管理（Graceful Shutdown用）
 let statusUpdateTimer: NodeJS.Timeout | null = null;
+let newsCheckTimer: NodeJS.Timeout | null = null;
 let isShuttingDown = false;
+
+const NEWS_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+async function checkNews() {
+  if (isShuttingDown || !isAutoCheckEnabled()) return;
+
+  try {
+    const result = await checkAndBroadcastNews(client);
+    if (result.newCount > 0) {
+      console.log(
+        `News check: ${result.newCount} new articles posted to ${result.successGuilds} guilds`
+      );
+    }
+  } catch (error) {
+    console.error("Failed to check news:", error);
+  }
+}
 
 function formatRemainingTime(mins: number): string {
   if (mins <= 0) return "まもなく";
@@ -142,6 +162,11 @@ client.once("clientReady", async () => {
 
   // Fetch map rotation and start 1-minute update cycle
   await fetchAndUpdateRotation();
+
+  // Start periodic news check (every 1 hour)
+  await checkNews();
+  newsCheckTimer = setInterval(checkNews, NEWS_CHECK_INTERVAL_MS);
+  console.log("News auto-check started (interval: 1 hour)");
 });
 
 // Register commands when bot joins a new guild
@@ -204,8 +229,12 @@ async function shutdown(signal: string) {
   if (statusUpdateTimer) {
     clearTimeout(statusUpdateTimer);
     statusUpdateTimer = null;
-    console.log("Timers cleared.");
   }
+  if (newsCheckTimer) {
+    clearInterval(newsCheckTimer);
+    newsCheckTimer = null;
+  }
+  console.log("Timers cleared.");
 
   // DB接続を閉じる
   try {

@@ -45,6 +45,8 @@ src/
 ├── commands/rank.ts      # /rank slash command
 ├── cli/rank.ts           # CLI version of rank command
 ├── services/apexApi.ts   # Apex Legends API client
+├── services/eaNews.ts    # EA公式ニュース取得サービス
+├── commands/update.ts    # /update slash command (ゲーム更新情報配信)
 └── utils/
     ├── rankCalculator.ts      # RP calculation logic
     └── rankCalculator.test.ts # Unit tests
@@ -56,7 +58,7 @@ config/
 ## Configuration
 
 - `config/season.json` - スプリット終了日とランクRP閾値（`activeSeason` でシーズン切り替え）
-- `.env` - APIキー（DISCORD_TOKEN, APEX_API_KEY）
+- `.env` - APIキー（DISCORD_TOKEN, APEX_API_KEY, BOT_OWNER_ID）
 
 ## Database & Migrations
 
@@ -100,3 +102,18 @@ config/
 
 Apex Legends Status API (`https://api.mozambiquehe.re/bridge`) を使用。
 Platform: `PC`（デフォルト）, `PS4`, `X1`, `SWITCH`
+
+## /update コマンド（ゲーム更新情報配信）
+
+EA公式ニュースページからApex Legendsのアップデート情報を取得してDiscordに配信する機能。
+
+```
+/update latest         — 最新のアップデート情報を表示（そのチャンネルに）
+/update check          — 新着チェック＆全サーバーに配信（Bot Owner のみ）
+/update auto <on|off>  — 自動チェックの有効/無効切り替え（Bot Owner のみ）
+```
+
+- 情報ソース: EA公式ニュースページのHTML内 `newsDataFallback` JSON
+- 自動チェック: 1時間ごとに新着をチェックし `notify_channel_id` 設定済みの全サーバーに配信
+- 配信履歴: `news_posts` テーブルに記録（`article_slug` で重複防止）
+- 権限: `check`/`auto` は `BOT_OWNER_ID` 環境変数で指定したユーザーのみ実行可能

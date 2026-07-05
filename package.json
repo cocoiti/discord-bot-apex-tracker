@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "rank": "tsx src/cli/rank.ts",
+    "news": "tsx src/cli/update.ts",
     "test": "vitest",
     "test:run": "vitest run",
     "db:generate": "drizzle-kit generate",

@@ -31,6 +31,16 @@ export const guildSettings = pgTable("guild_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const newsPosts = pgTable("news_posts", {
+  id: serial("id").primaryKey(),
+  articleSlug: text("article_slug").notNull().unique(),
+  articleTitle: text("article_title").notNull(),
+  publishedAt: timestamp("published_at").notNull(),
+  postedAt: timestamp("posted_at").defaultNow().notNull(),
+  successCount: integer("success_count").notNull().default(0),
+  failCount: integer("fail_count").notNull().default(0),
+});
+
 export const rpSnapshots = pgTable("rp_snapshots", {
   id: serial("id").primaryKey(),
   discordId: text("discord_id")
