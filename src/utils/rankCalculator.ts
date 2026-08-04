@@ -27,16 +27,20 @@ export interface RankProgress {
 
 const TIERS = ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Predator"];
 
+// Apexのシーズン/スプリット切り替えは 17:00 UTC（10:00 PT）に行われる。
+// 本番はTZ未設定（UTC）で動作するため、終了日の 17:00 UTC を切り替え基準にする。
+const SPLIT_RESET_UTC_HOUR = 17;
+
 function getActiveSeason(now?: Date) {
   const currentTime = now ?? new Date();
 
   const seasons = Object.values(seasonConfig.seasons);
 
-  // スプリット切り替えは早朝3時のため、終了日の3:00を基準に比較する
+  // 終了日の 17:00 UTC（実リセット時刻）を基準に比較する
   const upcoming = seasons
     .map((s) => {
       const [y, m, d] = s.splitEndDate.split("-").map(Number);
-      return { season: s, endDateTime: new Date(y, m - 1, d, 3, 0, 0) };
+      return { season: s, endDateTime: new Date(Date.UTC(y, m - 1, d, SPLIT_RESET_UTC_HOUR, 0, 0)) };
     })
     .filter(({ endDateTime }) => endDateTime > currentTime)
     .sort((a, b) => a.endDateTime.getTime() - b.endDateTime.getTime());
@@ -119,7 +123,7 @@ export function getDaysRemaining(now?: Date): number {
   endDate.setHours(0, 0, 0, 0);
   const diffTime = endDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  // 終了日は早朝3時頃に切り替わるため、実質的なプレイ可能日数は-1日
+  // 終了日当日の 17:00 UTC に切り替わるため、実質的なプレイ可能日数は-1日
   return Math.max(0, diffDays - 1);
 }
 

@@ -9,8 +9,8 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "rank": "tsx src/cli/rank.ts",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "TZ=UTC vitest",
+    "test:run": "TZ=UTC vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts"
   },

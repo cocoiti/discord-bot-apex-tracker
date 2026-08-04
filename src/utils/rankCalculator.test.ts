@@ -15,7 +15,7 @@ function getActiveSeasonForTest() {
   const upcoming = seasons
     .map((s) => {
       const [y, m, d] = s.splitEndDate.split("-").map(Number);
-      return { season: s, endDateTime: new Date(y, m - 1, d, 3, 0, 0) };
+      return { season: s, endDateTime: new Date(Date.UTC(y, m - 1, d, 17, 0, 0)) };
     })
     .filter(({ endDateTime }) => endDateTime > now)
     .sort((a, b) => a.endDateTime.getTime() - b.endDateTime.getTime());
