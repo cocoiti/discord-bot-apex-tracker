@@ -112,11 +112,12 @@ export function getNextTier(currentTier: string): TierInfo | null {
   };
 }
 
-export function getDaysRemaining(now?: Date): number {
-  const season = getActiveSeason(now);
+export function getDaysRemaining(now?: Date, splitEndDateOverride?: string): number {
+  // APIが実終了日を返す場合はそれを優先し、無ければconfigの推定値を使う
+  const splitEndDate = splitEndDateOverride ?? getActiveSeason(now).splitEndDate;
   // Date-only文字列（"YYYY-MM-DD"）はUTCとして解釈されるため、
   // 手動でパースしてローカル日付として扱う
-  const [year, month, day] = season.splitEndDate.split("-").map(Number);
+  const [year, month, day] = splitEndDate.split("-").map(Number);
   const endDate = new Date(year, month - 1, day);
   const today = now ? new Date(now.getTime()) : new Date();
   today.setHours(0, 0, 0, 0);
@@ -130,14 +131,15 @@ export function getDaysRemaining(now?: Date): number {
 export function calculateRankProgress(
   currentRP: number,
   apiRankName: string,
-  apiRankDiv: number
+  apiRankDiv: number,
+  splitEndDateOverride?: string
 ): RankProgress {
   const season = getActiveSeason();
   const currentRankName = formatRankName(apiRankName, apiRankDiv);
   const currentTier = getTierFromRankName(currentRankName);
   const nextTier = getNextTier(currentTier);
   const nextNextTier = nextTier ? getNextTier(nextTier.tier) : null;
-  const daysRemaining = getDaysRemaining();
+  const daysRemaining = getDaysRemaining(undefined, splitEndDateOverride);
 
   let nextTierRPNeeded: number | null = null;
   let nextTierDailyRP: number | null = null;
@@ -163,7 +165,7 @@ export function calculateRankProgress(
     nextTier,
     nextNextTier,
     daysRemaining,
-    splitEndDate: season.splitEndDate,
+    splitEndDate: splitEndDateOverride ?? season.splitEndDate,
     nextTierRPNeeded,
     nextTierDailyRP,
     nextNextTierRPNeeded,

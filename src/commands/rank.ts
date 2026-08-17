@@ -48,7 +48,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   try {
     const stats = await fetchPlayerStats(playerName, platform);
-    const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
+    const progress = calculateRankProgress(
+      stats.currentRP,
+      stats.rankName,
+      stats.rankDiv,
+      stats.splitEndDate
+    );
     let message = formatRankProgress(stats.name, progress);
 
     // Add kills information

@@ -20,7 +20,12 @@ async function main() {
   try {
     console.log(`Fetching stats for ${playerName} (${platform})...`);
     const stats = await fetchPlayerStats(playerName, platform);
-    const progress = calculateRankProgress(stats.currentRP, stats.rankName, stats.rankDiv);
+    const progress = calculateRankProgress(
+      stats.currentRP,
+      stats.rankName,
+      stats.rankDiv,
+      stats.splitEndDate
+    );
     console.log("");
     console.log(formatRankProgress(stats.name, progress).replace(/\*\*/g, ""));
 

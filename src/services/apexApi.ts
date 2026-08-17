@@ -19,6 +19,9 @@ export interface ApexPlayerStats {
   rankName: string;
   rankDiv: number;
   kills: number;
+  // APIが返す現在のランクスプリットの実終了日（UTC, "YYYY-MM-DD"）。
+  // 取得できない場合は undefined（config.season.json の推定値にフォールバックする）
+  splitEndDate?: string;
 }
 
 export async function fetchPlayerStats(
@@ -82,6 +85,15 @@ export async function fetchPlayerStats(
   const total = typedData.total as Record<string, Record<string, unknown>> | undefined;
   const kills = (total?.kills?.value as number) ?? 0;
 
+  // ランクスプリットの実終了日（rankedSeasonMeta.end はUNIX秒）。
+  // リセットは17:00 UTCに行われるため、そのUTC日付("YYYY-MM-DD")を採用する。
+  const rankedSeasonMeta = rank.rankedSeasonMeta as Record<string, unknown> | undefined;
+  const endEpoch = Number(rankedSeasonMeta?.end ?? 0);
+  const splitEndDate =
+    Number.isFinite(endEpoch) && endEpoch > 0
+      ? new Date(endEpoch * 1000).toISOString().slice(0, 10)
+      : undefined;
+
   return {
     name: String(global.name ?? playerName),
     platform: String(global.platform ?? validPlatform),
@@ -90,6 +102,7 @@ export async function fetchPlayerStats(
     rankName: String(rank.rankName ?? "Unknown"),
     rankDiv: Number(rank.rankDiv ?? 0),
     kills,
+    splitEndDate,
   };
 }
 

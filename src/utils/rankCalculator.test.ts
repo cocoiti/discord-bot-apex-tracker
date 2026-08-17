@@ -109,6 +109,13 @@ describe("rankCalculator", () => {
       const days = getDaysRemaining(now);
       expect(days).toBe(40); // 5/6 - 3/26 = 41, -1 = 40
     });
+
+    it("should use API split end date override instead of config", () => {
+      const now = new Date(2026, 7, 17); // Aug 17, 2026
+      // configの推定値ではなくAPIの実終了日(2026-09-15)を優先する
+      const days = getDaysRemaining(now, "2026-09-15");
+      expect(days).toBe(28); // 9/15 - 8/17 = 29, -1 = 28
+    });
   });
 
   describe("calculateRankProgress", () => {
@@ -152,6 +159,11 @@ describe("rankCalculator", () => {
       expect(progress.currentRankName).toBe("Master");
       expect(progress.currentTier).toBe("Master");
       expect(progress.nextTier).toEqual({ tier: "Predator", minRP: findTierMinRP("Predator") });
+    });
+
+    it("should reflect API split end date override", () => {
+      const progress = calculateRankProgress(8209, "Gold", 1, "2026-09-15");
+      expect(progress.splitEndDate).toBe("2026-09-15");
     });
 
     it("should handle Diamond III player", () => {
