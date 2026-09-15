@@ -92,29 +92,30 @@ describe("rankCalculator", () => {
     });
 
     it("should calculate correct days with injected date", () => {
-      const now = new Date(2026, 2, 16); // March 16, 2026
+      // JST 2026-03-16 正午。season28_split1 の最終プレイ日は JST 3/25（実リセット 3/26 02:00）
+      const now = new Date(Date.UTC(2026, 2, 16, 3, 0, 0)); // JST 03-16 12:00
       const days = getDaysRemaining(now);
-      expect(days).toBe(8); // season28_split1 ends 2026-03-25, 25-16=9, -1(早朝切り替え)=8
+      expect(days).toBe(9); // 最終日 3/25 - 今日 3/16 = 9
     });
 
-    it("should return 0 on split end date", () => {
-      const now = new Date(2026, 2, 25); // March 25, 2026 (end date)
+    it("should return 0 on split end date (JST)", () => {
+      const now = new Date(Date.UTC(2026, 2, 25, 3, 0, 0)); // JST 03-25 12:00（最終日当日）
       const days = getDaysRemaining(now);
       expect(days).toBe(0);
     });
 
     it("should return 0 when split end date has passed", () => {
-      // 終了日を過ぎると次シーズンが選択されるため、season28_split2 (2026-05-06) の残日数になる
-      const now = new Date(2026, 2, 26); // March 26, 2026
+      // 3/25 17:00 UTC 以降は次スプリット(season28_split2, 2026-05-06)が選択される
+      const now = new Date(Date.UTC(2026, 2, 26, 12, 0, 0)); // JST 03-26 21:00
       const days = getDaysRemaining(now);
-      expect(days).toBe(40); // 5/6 - 3/26 = 41, -1 = 40
+      expect(days).toBe(41); // 5/6 - 3/26 = 41
     });
 
     it("should use API split end date override instead of config", () => {
-      const now = new Date(2026, 7, 17); // Aug 17, 2026
+      const now = new Date(Date.UTC(2026, 7, 17, 3, 0, 0)); // JST 08-17 12:00
       // configの推定値ではなくAPIの実終了日(2026-09-15)を優先する
       const days = getDaysRemaining(now, "2026-09-15");
-      expect(days).toBe(28); // 9/15 - 8/17 = 29, -1 = 28
+      expect(days).toBe(29); // 9/15 - 8/17 = 29
     });
   });
 
@@ -191,6 +192,13 @@ describe("rankCalculator", () => {
       expect(formatted).toContain("Diamond");
       expect(formatted).toContain(`${findTierMinRP("Diamond")} RP`);
       expect(formatted).toContain(String(findTierMinRP("Diamond") - testRP));
+    });
+
+    it("should display split end date in JST reset day (UTC end date + morning)", () => {
+      // 実リセットは終了日 17:00 UTC = JST 翌日 02:00 のため、UTC終了日の +1 日「早朝」で表示する
+      const progress = calculateRankProgress(8209, "Gold", 1, "2026-09-15");
+      const formatted = formatRankProgress("TestPlayer", progress);
+      expect(formatted).toContain("2026/9/16 早朝");
     });
 
     it("should show message for highest rank", () => {

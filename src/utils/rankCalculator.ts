@@ -31,6 +31,17 @@ const TIERS = ["Rookie", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Mas
 // 本番はTZ未設定（UTC）で動作するため、終了日の 17:00 UTC を切り替え基準にする。
 const SPLIT_RESET_UTC_HOUR = 17;
 
+// 日本時間（JST）は UTC+9。表示・残日数はJST基準に揃える。
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+// 終了日(UTC "YYYY-MM-DD")の 17:00 UTC リセットを JST に変換した日時を返す。
+// 実リセットは JST では翌日 02:00 になる（例: 2026-09-15 → JST 2026-09-16 02:00）。
+// 戻り値は getUTC*() で JST の各要素が読める点に注意。
+function getResetJst(splitEndDate: string): Date {
+  const [y, m, d] = splitEndDate.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, SPLIT_RESET_UTC_HOUR, 0, 0) + JST_OFFSET_MS);
+}
+
 function getActiveSeason(now?: Date) {
   const currentTime = now ?? new Date();
 
@@ -115,17 +126,16 @@ export function getNextTier(currentTier: string): TierInfo | null {
 export function getDaysRemaining(now?: Date, splitEndDateOverride?: string): number {
   // APIが実終了日を返す場合はそれを優先し、無ければconfigの推定値を使う
   const splitEndDate = splitEndDateOverride ?? getActiveSeason(now).splitEndDate;
-  // Date-only文字列（"YYYY-MM-DD"）はUTCとして解釈されるため、
-  // 手動でパースしてローカル日付として扱う
+  // 実リセットは「終了日の 17:00 UTC」= JST 翌日 02:00（早朝）。
+  // JST基準で「今日」と「最終プレイ日(=UTC終了日と同じ日付)」の差を残日数とする。
+  // 例: 終了日 2026-09-15 なら JST 9/15 が最終日で、9/16 02:00 に切り替わる。
+  const nowMs = now ? now.getTime() : Date.now();
+  const nowJst = new Date(nowMs + JST_OFFSET_MS);
+  const todayJst = Date.UTC(nowJst.getUTCFullYear(), nowJst.getUTCMonth(), nowJst.getUTCDate());
   const [year, month, day] = splitEndDate.split("-").map(Number);
-  const endDate = new Date(year, month - 1, day);
-  const today = now ? new Date(now.getTime()) : new Date();
-  today.setHours(0, 0, 0, 0);
-  endDate.setHours(0, 0, 0, 0);
-  const diffTime = endDate.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  // 終了日当日の 17:00 UTC に切り替わるため、実質的なプレイ可能日数は-1日
-  return Math.max(0, diffDays - 1);
+  const lastPlayDayJst = Date.UTC(year, month - 1, day);
+  const diffDays = Math.round((lastPlayDayJst - todayJst) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
 }
 
 export function calculateRankProgress(
@@ -182,7 +192,11 @@ export function formatRankProgress(
   lines.push(`**${playerName}** のランク情報`);
   lines.push(`シーズン: ${progress.seasonName}`);
   lines.push(`現在のRP: **${progress.currentRP}** (${progress.currentRankName})`);
-  const [y, m, d] = progress.splitEndDate.split("-").map(Number);
+  // 実リセットは終了日 17:00 UTC = JST 翌日 02:00（早朝）。JST日付で表示する。
+  const reset = getResetJst(progress.splitEndDate);
+  const y = reset.getUTCFullYear();
+  const m = reset.getUTCMonth() + 1;
+  const d = reset.getUTCDate();
   const remaining = progress.daysRemaining === 0
     ? "**当日**"
     : `残り **${progress.daysRemaining}日**`;
