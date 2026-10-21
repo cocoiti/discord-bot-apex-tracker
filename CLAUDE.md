@@ -8,7 +8,7 @@ Apex LegendsのRP（ランクポイント）をトラッキングするDiscord B
 
 ## Tech Stack
 
-- Node.js 22 + TypeScript (ESM)
+- Node.js 24 + TypeScript (ESM)
 - discord.js v14
 - Vitest (testing)
 - Docker
