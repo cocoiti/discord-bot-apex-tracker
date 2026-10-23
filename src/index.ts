@@ -11,6 +11,7 @@ import { fetchMapRotation, MapRotation } from "./services/mapRotation.js";
 import { closeDb } from "./db/client.js";
 import { handleVoiceStateUpdate } from "./events/voiceStateUpdate.js";
 import { runMigrations } from "./db/migrate.js";
+import { commandsMatch } from "./utils/commandSync.js";
 
 // 起動時の環境変数バリデーション
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -118,24 +119,41 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
 
   try {
-    console.log("Registering slash commands...");
+    console.log("Checking slash commands...");
 
-    // Clear global commands to avoid duplicates
-    await rest.put(Routes.applicationCommands(botUser.id), {
-      body: [],
-    });
-    console.log("Global commands cleared");
+    const desiredCommands = commands.map((cmd) => cmd.data.toJSON());
 
-    // Register as guild commands for immediate availability
+    // Clear global commands to avoid duplicates（残っている場合のみ）
+    const globalCommands = (await rest.get(
+      Routes.applicationCommands(botUser.id)
+    )) as unknown[];
+    if (globalCommands.length > 0) {
+      await rest.put(Routes.applicationCommands(botUser.id), {
+        body: [],
+      });
+      console.log("Global commands cleared");
+    }
+
+    // Register as guild commands for immediate availability.
+    // 登録は1ギルドあたり1日200回の上限があるため、内容が同じなら送らない
     const guilds = client.guilds.cache;
     for (const [guildId, guild] of guilds) {
+      const existingCommands = (await rest.get(
+        Routes.applicationGuildCommands(botUser.id, guildId)
+      )) as unknown[];
+
+      if (commandsMatch(existingCommands, desiredCommands)) {
+        console.log(`Commands already up to date for guild: ${guild.name}`);
+        continue;
+      }
+
       await rest.put(Routes.applicationGuildCommands(botUser.id, guildId), {
-        body: commands.map((cmd) => cmd.data.toJSON()),
+        body: desiredCommands,
       });
       console.log(`Commands registered for guild: ${guild.name}`);
     }
 
-    console.log("Slash commands registered!");
+    console.log("Slash command check complete!");
   } catch (error) {
     console.error("Failed to register commands:", error);
   }
